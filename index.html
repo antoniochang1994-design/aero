@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero car rental - 专业租车服务</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0A2463" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Aero car rental" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- i18next -->
+  <script src="https://cdn.jsdelivr.net/npm/i18next@21.6.10/i18next.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans:wght@300;400;500;700&display=swap');
+    :root{
+      --primary-color:#0A2463;
+      --secondary-color:#3E92CC;
+      --accent-color:#D8315B;
+      --light-color:#FFFAFF;
+      --dark-color:#1E1B18;
+    }
+    body{font-family:'Noto Sans SC','Noto Sans',sans-serif;background-color:#f8f9fa;}
+    .car-card{transition:transform .3s ease,box-shadow .3s ease;}
+    .car-card:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,.1);}
+    .service-card{transition:transform .3s ease;}
+    .service-card:hover{transform:scale(1.03);}
+    .btn-primary{background-color:var(--primary-color);color:#fff;transition:background-color .3s ease;}
+    .btn-primary:hover{background-color:#0d2d7a;}
+    .btn-secondary{background-color:var(--secondary-color);color:#fff;transition:background-color .3s ease;}
+    .btn-secondary:hover{background-color:#3580b3;}
+    .btn-accent{background-color:var(--accent-color);color:#fff;transition:background-color .3s ease;}
+    .btn-accent:hover{background-color:#c52d52;}
+    #car-model-container{width:100%;height:300px;background-color:#f0f0f0;border-radius:8px;overflow:hidden;}
+    .custom-slider{-webkit-appearance:none;width:100%;height:8px;border-radius:5px;background:#d3d3d3;outline:none;}
+    .custom-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--primary-color);cursor:pointer;}
+    .custom-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--primary-color);cursor:pointer;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    .animate-fade-in{animation:fadeIn .5s ease forwards;}
+    .navbar{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+    .footer{background:var(--primary-color);color:#fff;}
+    .language-switcher{position:relative;cursor:pointer;}
+    .language-dropdown{position:absolute;top:100%;right:0;background:#fff;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.1);padding:8px 0;min-width:120px;display:none;z-index:1000;}
+    .language-switcher:hover .language-dropdown{display:block;}
+    .language-option{padding:8px 16px;transition:background-color .2s ease;}
+    .language-option:hover{background:#f0f0f0;}
+    .booking-form{background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+    @media (max-width:768px){.desktop-menu{display:none;}.mobile-menu{display:block;}}
+    @media (min-width:769px){.desktop-menu{display:flex;}.mobile-menu{display:none;}}
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar fixed w-full z-50">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center">
+        <a href="#home" class="text-2xl font-bold text-[#0A2463] flex items-center">
+          <i class="fas fa-car-side mr-2"></i>
+          <span data-i18n="brand"></span>
+        </a>
+      </div>
+
+      <!-- Desktop Menu -->
+      <div class="desktop-menu items-center space-x-8">
+        <a href="#home" class="text-gray-700 hover:text-[#0A2463] font-medium" data-i18n="nav.home"></a>
+        <a href="#cars" class="text-gray-700 hover:text-[#0A2463] font-medium" data-i18n="nav.cars"></a>
+        <a href="#services" class="text-gray-700 hover:text-[#0A2463] font-medium" data-i18n="nav.services"></a>
+        <a href="#booking" class="text-gray-700 hover:text-[#0A2463] font-medium" data-i18n="nav.booking"></a>
+        <a href="#about" class="text-gray-700 hover:text-[#0A2463] font-medium" data-i18n="nav.about"></a>
+
+        <!-- Language Switcher -->
+        <div class="language-switcher flex items-center">
+          <span id="current-language"></span>
+          <i class="fas fa-chevron-down ml-1 text-xs"></i>
+          <div class="language-dropdown">
+            <div class="language-option" data-lang="zh-CN">中文</div>
+            <div class="language-option" data-lang="en-US">English</div>
+          </div>
+        </div>
+
+        <a href="#login" class="bg-[#0A2463] text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition" data-i18n="nav.login"></a>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <div class="mobile-menu">
+        <button id="mobile-menu-button" class="text-gray-700">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu-dropdown" class="hidden bg-white w-full border-t">
+      <div class="container mx-auto px-4 py-2">
+        <a href="#home" class="block py-2 text-gray-700 hover:text-[#0A2463]" data-i18n="nav.home"></a>
+        <a href="#cars" class="block py-2 text-gray-700 hover:text-[#0A2463]" data-i18n="nav.cars"></a>
+        <a href="#services" class="block py-2 text-gray-700 hover:text-[#0A2463]" data-i18n="nav.services"></a>
+        <a href="#booking" class="block py-2 text-gray-700 hover:text-[#0A2463]" data-i18n="nav.booking"></a>
+        <a href="#about" class="block py-2 text-gray-700 hover:text-[#0A2463]" data-i18n="nav.about"></a>
+
+        <div class="py-2 border-t border-b">
+          <div class="flex items-center justify-between">
+            <span data-i18n="language"></span>
+            <div class="flex">
+              <button class="language-btn px-3 py-1 rounded-l bg-[#0A2463] text-white" data-lang="zh-CN">中文</button>
+              <button class="language-btn px-3 py-1 rounded-r bg-gray-200" data-lang="en-US">EN</button>
+            </div>
+          </div>
+        </div>
+
+        <a href="#login" class="block py-2 text-center bg-[#0A2463] text-white rounded-md mt-2" data-i18n="nav.login"></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section id="home" class="pt-24 pb-12 md:pt-32 md:pb-20 bg-gradient-to-b from-gray-100 to-white">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/2 mb-8 md:mb-0 animate-fade-in">
+          <h1 class="text-4xl md:text-5xl font-bold text-[#0A2463] mb-4" data-i18n="hero.title"></h1>
+          <p class="text-lg text-gray-600 mb-6" data-i18n="hero.subtitle"></p>
+          <div class="flex flex-wrap gap-4">
+            <a href="#booking" class="btn-primary px-6 py-3 rounded-md font-medium flex items-center">
+              <i class="fas fa-calendar-check mr-2"></i>
+              <span data-i18n="hero.bookNow"></span>
+            </a>
+            <a href="#cars" class="btn-secondary px-6 py-3 rounded-md font-medium flex items-center">
+              <i class="fas fa-car mr-2"></i>
+              <span data-i18n="hero.viewCars"></span>
+            </a>
+          </div>
+        </div>
+
+        <div class="md:w-1/2 animate-fade-in" style="animation-delay:.2s;">
+          <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/679935761a14474b82255871fecfb986~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=jDdaCxgfXmwu9A%2BqZH6CQXr7YU0%3D"
+               alt="Hero" class="w-full rounded-lg shadow-xl">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Booking -->
+  <section id="booking" class="py-12 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="booking-form p-6 md:p-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-8" data-i18n="booking.title"></h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div>
+            <label class="block text-gray-700 mb-2" data-i18n="booking.pickupLocation"></label>
+            <div class="relative">
+              <i class="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <select class="w-full border border-gray-300 rounded-md py-2 px-10 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+                <option value="airport" data-i18n="booking.locations.airport"></option>
+                <option value="downtown" data-i18n="booking.locations.downtown"></option>
+                <option value="hotel" data-i18n="booking.locations.hotel"></option>
+                <option value="home" data-i18n="booking.locations.home"></option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2" data-i18n="booking.pickupDate"></label>
+            <div class="relative">
+              <i class="fas fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <input type="date" class="w-full border border-gray-300 rounded-md py-2 px-10 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2" data-i18n="booking.returnDate"></label>
+            <div class="relative">
+              <i class="fas fa-calendar-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <input type="date" class="w-full border border-gray-300 rounded-md py-2 px-10 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2" data-i18n="booking.rentalType"></label>
+            <div class="relative">
+              <i class="fas fa-car-side absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <select class="w-full border border-gray-300 rounded-md py-2 px-10 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+                <option value="daily" data-i18n="booking.types.daily"></option>
+                <option value="weekly" data-i18n="booking.types.weekly"></option>
+                <option value="monthly" data-i18n="booking.types.monthly"></option>
+                <option value="withDriver" data-i18n="booking.types.withDriver"></option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 text-center">
+          <button id="search-cars-btn" class="btn-primary px-8 py-3 rounded-md font-medium text-lg">
+            <i class="fas fa-search mr-2"></i>
+            <span data-i18n="booking.search"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cars -->
+  <section id="cars" class="py-12 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-4" data-i18n="cars.title"></h2>
+      <p class="text-gray-600 text-center mb-10 max-w-2xl mx-auto" data-i18n="cars.subtitle"></p>
+
+      <!-- Filters -->
+      <div class="mb-8 bg-white p-4 rounded-lg shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-gray-700 mb-2 text-sm" data-i18n="cars.filters.type"></label>
+            <select id="car-type-filter" class="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+              <option value="all" data-i18n="cars.filters.all"></option>
+              <option value="sedan" data-i18n="cars.filters.sedan"></option>
+              <option value="suv" data-i18n="cars.filters.suv"></option>
+              <option value="van" data-i18n="cars.filters.van"></option>
+              <option value="luxury" data-i18n="cars.filters.luxury"></option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2 text-sm" data-i18n="cars.filters.brand"></label>
+            <select id="car-brand-filter" class="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+              <option value="all" data-i18n="cars.filters.all"></option>
+              <option value="audi" data-i18n="brands.audi"></option>
+              <option value="bmw" data-i18n="brands.bmw"></option>
+              <option value="mercedes" data-i18n="brands.mercedes"></option>
+              <option value="toyota" data-i18n="brands.toyota"></option>
+              <option value="volvo" data-i18n="brands.volvo"></option>
+              <option value="haval" data-i18n="brands.haval"></option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2 text-sm" data-i18n="cars.filters.price"></label>
+            <div class="px-2">
+              <input type="range" id="price-range" min="100" max="2000" value="2000" class="custom-slider">
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>₱100</span>
+                <span id="price-display">₱2000+</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-2 text-sm" data-i18n="cars.filters.seats"></label>
+            <select id="seats-filter" class="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+              <option value="all" data-i18n="cars.filters.all"></option>
+              <option value="2" data-i18n="cars.seats.2"></option>
+              <option value="4" data-i18n="cars.seats.4"></option>
+              <option value="5" data-i18n="cars.seats.5"></option>
+              <option value="7" data-i18n="cars.seats.7"></option>
+              <option value="9+" data-i18n="cars.seats.9plus"></option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listings -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="car-listings">
+        <!-- 1 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="luxury" data-brand="audi" data-price="1200" data-seats="5">
+          <div class="relative">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/f0ea121030f0411da3deebf7aa135cc6~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=zza%2FXeIqssl8Tk1tLnkMC7y1zco%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+            <div class="absolute top-3 right-3 bg-[#D8315B] text-white text-xs font-bold px-2 py-1 rounded">
+              <span data-i18n="cars.featured"></span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.bentleyMulsanne"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱1,200<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 5</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 4</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="1">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="suv" data-brand="toyota" data-price="500" data-seats="7">
+          <div class="relative">
+            <img src="https://p26-doubao-search-sign.byteimg.com/labis/be5b7e593335b4da1ded8cb1249a0cec~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=ylh2pl%2Bw5kFcqUlV7vfJpS%2Bs6pk%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.toyotaHighlander"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱500<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 7</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 5</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="2">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="sedan" data-brand="audi" data-price="600" data-seats="5">
+          <div class="relative">
+            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/679935761a14474b82255871fecfb986~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=jDdaCxgfXmwu9A%2BqZH6CQXr7YU0%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+            <div class="absolute top-3 right-3 bg-[#3E92CC] text-white text-xs font-bold px-2 py-1 rounded">
+              <span data-i18n="cars.popular"></span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.audiA7"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱600<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 5</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 3</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="3">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="van" data-brand="mercedes" data-price="800" data-seats="9">
+          <div class="relative">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/2021c923a31e4713908c0b7ea46b7fa4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=oGs%2BDQUMuKK2fGDLhNARCgVxwKs%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.mercedesVClass"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱800<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 9</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 6</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="4">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="sedan" data-brand="volvo" data-price="450" data-seats="5">
+          <div class="relative">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/abf692a8eaae4b6184697a4d48081ebf~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=29fpZ7J%2BEN81ejrIMLeFfMQpIBQ%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.volvoS90"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱450<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 5</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 3</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="5">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6 -->
+        <div class="car-card bg-white rounded-lg overflow-hidden shadow-md" data-type="suv" data-brand="haval" data-price="350" data-seats="5">
+          <div class="relative">
+            <img src="https://p11-doubao-search-sign.byteimg.com/pgc-image/3a54bf231a684a46911e9d8cfd585e90~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=tt5FyQlcICYQOlt6pBdq0zbjt1U%3D"
+                 alt="Car" class="w-full h-48 object-cover">
+            <div class="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+              <span data-i18n="cars.economy"></span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="text-lg font-bold" data-i18n="models.havalH7"></h3>
+              <div class="text-right">
+                <div class="text-[#0A2463] font-bold">₱350<span class="text-sm text-gray-500" data-i18n="cars.perDay"></span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4">
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-user-friends mr-1"></i> 5</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-cog mr-1"></i> AT</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-suitcase mr-1"></i> 4</span>
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded flex items-center"><i class="fas fa-snowflake mr-1"></i> AC</span>
+            </div>
+            <div class="flex justify-between">
+              <button class="view-details-btn text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center" data-car-id="6">
+                <span data-i18n="cars.viewDetails"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+              <button class="book-now-btn bg-[#0A2463] text-white px-3 py-1 rounded text-sm font-medium">
+                <span data-i18n="cars.bookNow"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Load More -->
+      <div class="text-center mt-8">
+        <button id="load-more-cars" class="border-2 border-[#0A2463] text-[#0A2463] px-6 py-2 rounded-md font-medium hover:bg-[#0A2463] hover:text-white transition">
+          <span data-i18n="cars.loadMore"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Car Details Modal -->
+  <div id="car-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-2xl font-bold" id="modal-car-title"></h3>
+          <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="relative rounded-lg overflow-hidden mb-4">
+              <img id="modal-car-image" src="" alt="Car" class="w-full h-64 object-cover">
+            </div>
+
+            <div id="car-model-container" class="mb-4"></div>
+
+            <div class="grid grid-cols-4 gap-2">
+              <button class="car-color-btn w-full h-10 rounded-full bg-gray-800 border-2 border-white shadow-md" data-color="gray"></button>
+              <button class="car-color-btn w-full h-10 rounded-full bg-blue-600 border-2 border-white shadow-md" data-color="blue"></button>
+              <button class="car-color-btn w-full h-10 rounded-full bg-red-600 border-2 border-white shadow-md" data-color="red"></button>
+              <button class="car-color-btn w-full h-10 rounded-full bg-white border-2 border-gray-300 shadow-md" data-color="white"></button>
+            </div>
+          </div>
+
+          <div>
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" data-i18n="carDetails.dailyRate"></span>
+                <span class="text-2xl font-bold text-[#0A2463]" id="modal-car-price"></span>
+              </div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600" data-i18n="carDetails.weeklyRate"></span>
+                <span class="text-xl font-bold text-[#0A2463]" id="modal-car-weekly-price"></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600" data-i18n="carDetails.monthlyRate"></span>
+                <span class="text-xl font-bold text-[#0A2463]" id="modal-car-monthly-price"></span>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h4 class="font-bold mb-2" data-i18n="carDetails.specifications"></h4>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center"><i class="fas fa-user-friends text-[#3E92CC] mr-2"></i><span id="modal-car-seats"></span></div>
+                <div class="flex items-center"><i class="fas fa-cog text-[#3E92CC] mr-2"></i><span id="modal-car-transmission"></span></div>
+                <div class="flex items-center"><i class="fas fa-gas-pump text-[#3E92CC] mr-2"></i><span id="modal-car-fuel"></span></div>
+                <div class="flex items-center"><i class="fas fa-suitcase text-[#3E92CC] mr-2"></i><span id="modal-car-luggage"></span></div>
+                <div class="flex items-center"><i class="fas fa-snowflake text-[#3E92CC] mr-2"></i><span id="modal-car-ac"></span></div>
+                <div class="flex items-center"><i class="fas fa-car-side text-[#3E92CC] mr-2"></i><span id="modal-car-type"></span></div>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="font-bold mb-2" data-i18n="carDetails.featuresTitle"></h4>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="carDetails.features.bluetooth"></span></div>
+                <div class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="carDetails.features.navigation"></span></div>
+                <div class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="carDetails.features.cruiseControl"></span></div>
+                <div class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="carDetails.features.parkingSensors"></span></div>
+              </div>
+            </div>
+
+            <div class="flex flex-col space-y-3">
+              <button class="btn-primary w-full py-3 rounded-md font-medium flex items-center justify-center">
+                <i class="fas fa-calendar-check mr-2"></i>
+                <span data-i18n="carDetails.bookNow"></span>
+              </button>
+              <button class="btn-secondary w-full py-3 rounded-md font-medium flex items-center justify-center">
+                <i class="fas fa-phone-alt mr-2"></i>
+                <span data-i18n="carDetails.callUs"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <section id="services" class="py-12 bg-white">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-4" data-i18n="services.title"></h2>
+      <p class="text-gray-600 text-center mb-10 max-w-2xl mx-auto" data-i18n="services.subtitle"></p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="service-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <img src="https://p5-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/23d80011e4d445e79e04208caa8d4fa7~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026013015182926F6CEE60D45B527401F&rrcfp=f06b921b&x-expires=1772349558&x-signature=BTtkTRxuz9Pr%2BeLfRbdBRpDNqRk%3D"
+                 alt="Service" class="w-full h-48 object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+            <h3 class="absolute bottom-4 left-4 text-white text-xl font-bold" data-i18n="services.withDriver.title"></h3>
+          </div>
+          <div class="p-4">
+            <p class="text-gray-600 mb-4" data-i18n="services.withDriver.description"></p>
+            <div class="flex justify-between items-center">
+              <span class="text-[#0A2463] font-bold" data-i18n="services.withDriver.price"></span>
+              <button class="text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center">
+                <span data-i18n="services.learnMore"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <img src="https://p5-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/65ca227a8534414789ce57c3288b82f8~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026013015182926F6CEE60D45B527401F&rrcfp=f06b921b&x-expires=1772349557&x-signature=2iPplBez0eRqF%2B8vrmFcDrc8K74%3D"
+                 alt="Service" class="w-full h-48 object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+            <h3 class="absolute bottom-4 left-4 text-white text-xl font-bold" data-i18n="services.delivery.title"></h3>
+          </div>
+          <div class="p-4">
+            <p class="text-gray-600 mb-4" data-i18n="services.delivery.description"></p>
+            <div class="flex justify-between items-center">
+              <span class="text-[#0A2463] font-bold" data-i18n="services.delivery.price"></span>
+              <button class="text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center">
+                <span data-i18n="services.learnMore"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <img src="https://p5-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/960625f6aaa0436ba06c44a0ec4b3034~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=2026013015182926F6CEE60D45B527401F&rrcfp=f06b921b&x-expires=1772349557&x-signature=6RYTCYW1ORm3eZNQdOVagwAupos%3D"
+                 alt="Service" class="w-full h-48 object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+            <h3 class="absolute bottom-4 left-4 text-white text-xl font-bold" data-i18n="services.carWash.title"></h3>
+          </div>
+          <div class="p-4">
+            <p class="text-gray-600 mb-4" data-i18n="services.carWash.description"></p>
+            <div class="flex justify-between items-center">
+              <span class="text-[#0A2463] font-bold" data-i18n="services.carWash.price"></span>
+              <button class="text-[#3E92CC] hover:text-[#0A2463] font-medium flex items-center">
+                <span data-i18n="services.learnMore"></span><i class="fas fa-chevron-right ml-1 text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Packages -->
+      <div class="mt-12">
+        <h3 class="text-2xl font-bold text-center mb-8" data-i18n="services.packages.title"></h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg overflow-hidden shadow-md border-t-4 border-[#3E92CC]">
+            <div class="p-6">
+              <h4 class="text-xl font-bold mb-2" data-i18n="services.packages.basic.title"></h4>
+              <div class="text-3xl font-bold text-[#0A2463] mb-4">₱299<span class="text-sm text-gray-500" data-i18n="services.packages.perDay"></span></div>
+              <ul class="mb-6 space-y-2">
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.basic.car"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.basic.insurance"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.basic.unlimited"></span></li>
+                <li class="flex items-center text-gray-400"><i class="fas fa-times mr-2"></i><span data-i18n="services.packages.basic.driver"></span></li>
+                <li class="flex items-center text-gray-400"><i class="fas fa-times mr-2"></i><span data-i18n="services.packages.basic.delivery"></span></li>
+              </ul>
+              <button class="w-full py-2 border-2 border-[#3E92CC] text-[#3E92CC] rounded-md font-medium hover:bg-[#3E92CC] hover:text-white transition">
+                <span data-i18n="services.packages.select"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg overflow-hidden shadow-xl border-t-4 border-[#0A2463] transform scale-105 relative">
+            <div class="absolute top-0 right-0 bg-[#D8315B] text-white text-xs font-bold px-3 py-1">
+              <span data-i18n="services.packages.popular"></span>
+            </div>
+            <div class="p-6">
+              <h4 class="text-xl font-bold mb-2" data-i18n="services.packages.standard.title"></h4>
+              <div class="text-3xl font-bold text-[#0A2463] mb-4">₱599<span class="text-sm text-gray-500" data-i18n="services.packages.perDay"></span></div>
+              <ul class="mb-6 space-y-2">
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.standard.car"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.standard.insurance"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.standard.unlimited"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.standard.delivery"></span></li>
+                <li class="flex items-center text-gray-400"><i class="fas fa-times mr-2"></i><span data-i18n="services.packages.standard.driver"></span></li>
+              </ul>
+              <button class="w-full py-2 bg-[#0A2463] text-white rounded-md font-medium hover:bg-opacity-90 transition">
+                <span data-i18n="services.packages.select"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg overflow-hidden shadow-md border-t-4 border-[#D8315B]">
+            <div class="p-6">
+              <h4 class="text-xl font-bold mb-2" data-i18n="services.packages.premium.title"></h4>
+              <div class="text-3xl font-bold text-[#0A2463] mb-4">₱999<span class="text-sm text-gray-500" data-i18n="services.packages.perDay"></span></div>
+              <ul class="mb-6 space-y-2">
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.premium.car"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.premium.insurance"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.premium.unlimited"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.premium.delivery"></span></li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i><span data-i18n="services.packages.premium.driver"></span></li>
+              </ul>
+              <button class="w-full py-2 border-2 border-[#D8315B] text-[#D8315B] rounded-md font-medium hover:bg-[#D8315B] hover:text-white transition">
+                <span data-i18n="services.packages.select"></span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="py-12 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/2 mb-8 md:mb-0">
+          <h2 class="text-3xl font-bold mb-4" data-i18n="about.title"></h2>
+          <p class="text-gray-600 mb-4" data-i18n="about.description1"></p>
+          <p class="text-gray-600 mb-6" data-i18n="about.description2"></p>
+
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm">
+              <div class="text-3xl font-bold text-[#0A2463] mb-1">10+</div>
+              <div class="text-gray-600 text-center" data-i18n="about.years"></div>
+            </div>
+            <div class="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm">
+              <div class="text-3xl font-bold text-[#0A2463] mb-1">500+</div>
+              <div class="text-gray-600 text-center" data-i18n="about.vehicles"></div>
+            </div>
+            <div class="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm">
+              <div class="text-3xl font-bold text-[#0A2463] mb-1">10k+</div>
+              <div class="text-gray-600 text-center" data-i18n="about.customers"></div>
+            </div>
+            <div class="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm">
+              <div class="text-3xl font-bold text-[#0A2463] mb-1">24/7</div>
+              <div class="text-gray-600 text-center" data-i18n="about.support"></div>
+            </div>
+          </div>
+
+          <a href="#contact" class="btn-primary inline-block px-6 py-3 rounded-md font-medium">
+            <i class="fas fa-envelope mr-2"></i>
+            <span data-i18n="about.contactUs"></span>
+          </a>
+        </div>
+
+        <div class="md:w-1/2 md:pl-12">
+          <div class="grid grid-cols-2 gap-4">
+            <img src="https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/679935761a14474b82255871fecfb986~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=jDdaCxgfXmwu9A%2BqZH6CQXr7YU0%3D" alt="1" class="rounded-lg shadow-md h-48 object-cover">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/2021c923a31e4713908c0b7ea46b7fa4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=oGs%2BDQUMuKK2fGDLhNARCgVxwKs%3D" alt="2" class="rounded-lg shadow-md h-48 object-cover">
+            <img src="https://p26-doubao-search-sign.byteimg.com/labis/be5b7e593335b4da1ded8cb1249a0cec~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=ylh2pl%2Bw5kFcqUlV7vfJpS%2Bs6pk%3D" alt="3" class="rounded-lg shadow-md h-48 object-cover">
+            <img src="https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/f0ea121030f0411da3deebf7aa135cc6~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=zza%2FXeIqssl8Tk1tLnkMC7y1zco%3D" alt="4" class="rounded-lg shadow-md h-48 object-cover">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-12 bg-white">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-4" data-i18n="contact.title"></h2>
+      <p class="text-gray-600 text-center mb-10 max-w-2xl mx-auto" data-i18n="contact.subtitle"></p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <form class="space-y-4">
+            <div>
+              <label for="name" class="block text-gray-700 mb-2" data-i18n="contact.form.name"></label>
+              <input type="text" id="name" class="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+            </div>
+            <div>
+              <label for="email" class="block text-gray-700 mb-2" data-i18n="contact.form.email"></label>
+              <input type="email" id="email" class="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+            </div>
+            <div>
+              <label for="phone" class="block text-gray-700 mb-2" data-i18n="contact.form.phone"></label>
+              <input type="tel" id="phone" class="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[#0A2463]">
+            </div>
+            <div>
+              <label for="message" class="block text-gray-700 mb-2" data-i18n="contact.form.message"></label>
+              <textarea id="message" rows="4" class="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[#0A2463]"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary px-6 py-3 rounded-md font-medium">
+              <i class="fas fa-paper-plane mr-2"></i>
+              <span data-i18n="contact.form.submit"></span>
+            </button>
+          </form>
+        </div>
+
+        <div>
+          <div class="bg-gray-50 p-6 rounded-lg h-full">
+            <h3 class="text-xl font-bold mb-4" data-i18n="contact.info"></h3>
+
+            <div class="space-y-4">
+              <div class="flex items-start">
+                <div class="bg-[#0A2463] text-white p-3 rounded-full mr-4"><i class="fas fa-map-marker-alt"></i></div>
+                <div>
+                  <h4 class="font-bold" data-i18n="contact.address"></h4>
+                  <p class="text-gray-600" data-i18n="contact.addressDetail"></p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="bg-[#0A2463] text-white p-3 rounded-full mr-4"><i class="fas fa-phone-alt"></i></div>
+                <div>
+                  <h4 class="font-bold" data-i18n="contact.phone"></h4>
+                  <p class="text-gray-600" data-i18n="contact.phoneDetail"></p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="bg-[#0A2463] text-white p-3 rounded-full mr-4"><i class="fas fa-envelope"></i></div>
+                <div>
+                  <h4 class="font-bold" data-i18n="contact.email"></h4>
+                  <p class="text-gray-600" data-i18n="contact.emailDetail"></p>
+                </div>
+              </div>
+
+              <div class="flex items-start">
+                <div class="bg-[#0A2463] text-white p-3 rounded-full mr-4"><i class="fas fa-clock"></i></div>
+                <div>
+                  <h4 class="font-bold" data-i18n="contact.hours"></h4>
+                  <p class="text-gray-600" data-i18n="contact.weekdays"></p>
+                  <p class="text-gray-600" data-i18n="contact.weekends"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <h4 class="font-bold mb-3" data-i18n="contact.follow"></h4>
+              <div class="flex space-x-4">
+                <a href="#" class="bg-[#0A2463] text-white p-2 rounded-full hover:bg-opacity-90 transition"><i class="fab fa-weixin"></i></a>
+                <a href="#" class="bg-[#0A2463] text-white p-2 rounded-full hover:bg-opacity-90 transition"><i class="fab fa-weibo"></i></a>
+                <a href="#" class="bg-[#0A2463] text-white p-2 rounded-full hover:bg-opacity-90 transition"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" class="bg-[#0A2463] text-white p-2 rounded-full hover:bg-opacity-90 transition"><i class="fab fa-facebook-f"></i></a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer py-8">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div>
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-car-side mr-2"></i>
+            <span data-i18n="brand"></span>
+          </h3>
+          <p class="text-gray-300 mb-4" data-i18n="footer.description"></p>
+          <div class="flex space-x-4">
+            <a href="#" class="text-white hover:text-gray-300 transition"><i class="fab fa-weixin"></i></a>
+            <a href="#" class="text-white hover:text-gray-300 transition"><i class="fab fa-weibo"></i></a>
+            <a href="#" class="text-white hover:text-gray-300 transition"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#" class="text-white hover:text-gray-300 transition"><i class="fab fa-facebook-f"></i></a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-bold text-white mb-4" data-i18n="footer.quickLinks"></h4>
+          <ul class="space-y-2">
+            <li><a href="#home" class="text-gray-300 hover:text-white transition" data-i18n="nav.home"></a></li>
+            <li><a href="#cars" class="text-gray-300 hover:text-white transition" data-i18n="nav.cars"></a></li>
+            <li><a href="#services" class="text-gray-300 hover:text-white transition" data-i18n="nav.services"></a></li>
+            <li><a href="#booking" class="text-gray-300 hover:text-white transition" data-i18n="nav.booking"></a></li>
+            <li><a href="#about" class="text-gray-300 hover:text-white transition" data-i18n="nav.about"></a></li>
+            <li><a href="#contact" class="text-gray-300 hover:text-white transition" data-i18n="contact.title"></a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-bold text-white mb-4" data-i18n="footer.services"></h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="services.withDriver.title"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="services.delivery.title"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="services.carWash.title"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.longTerm"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.airport"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.insurance"></a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-bold text-white mb-4" data-i18n="footer.support"></h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.faq"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.terms"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.privacy"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.rentalAgreement"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.insuranceInfo"></a></li>
+            <li><a href="#" class="text-gray-300 hover:text-white transition" data-i18n="footer.complaints"></a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm mb-4 md:mb-0" data-i18n="footer.copyright"></p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white text-sm transition" data-i18n="footer.terms"></a>
+          <a href="#" class="text-gray-400 hover:text-white text-sm transition" data-i18n="footer.privacy"></a>
+          <a href="#" class="text-gray-400 hover:text-white text-sm transition" data-i18n="footer.cookies"></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to top -->
+  <button id="back-to-top" class="fixed bottom-6 right-6 bg-[#0A2463] text-white p-3 rounded-full shadow-lg z-30 hidden hover:bg-opacity-90 transition">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <script>
+    // ---------- i18n resources (Chinese-only / English-only) ----------
+    const resources = {
+      "zh-CN": {
+        translation: {
+          brand: "Aero car rental",
+          language: "语言",
+          nav: { home:"首页", cars:"车型", services:"服务", booking:"预订", about:"关于我们", login:"登录" },
+          hero: {
+            title: "专业租车服务\n满足您的每一个需求",
+            subtitle: "提供日租、月租、带司机、送车上门等多种服务，让您的出行更加便捷舒适。",
+            bookNow:"立即预订",
+            viewCars:"查看车型"
+          },
+          booking: {
+            title:"快速预订",
+            pickupLocation:"取车地点",
+            pickupDate:"取车日期",
+            returnDate:"还车日期",
+            rentalType:"租车类型",
+            locations:{ airport:"机场", downtown:"市中心", hotel:"酒店", home:"送车上门" },
+            types:{ daily:"日租", weekly:"周租", monthly:"月租", withDriver:"带司机" },
+            search:"搜索车辆"
+          },
+          brands: { audi:"奥迪", bmw:"宝马", mercedes:"奔驰", toyota:"丰田", volvo:"沃尔沃", haval:"哈弗" },
+          models: {
+            bentleyMulsanne:"宾利慕尚",
+            toyotaHighlander:"丰田汉兰达",
+            audiA7:"奥迪A7",
+            mercedesVClass:"奔驰V级商务车",
+            volvoS90:"沃尔沃S90",
+            havalH7:"哈弗H7"
+          },
+          cars: {
+            title:"我们的车型",
+            subtitle:"提供多种类型的高品质车辆，满足您的不同需求和预算。",
+            filters:{ type:"车型", brand:"品牌", price:"价格范围", seats:"座位数", all:"全部", sedan:"轿车", suv:"SUV", van:"商务车", luxury:"豪华车" },
+            seats:{ "2":"2座","4":"4座","5":"5座","7":"7座","9plus":"9座以上" },
+            featured:"精选",
+            popular:"热门",
+            economy:"经济",
+            perDay:"/天",
+            viewDetails:"查看详情",
+            bookNow:"立即预订",
+            loadMore:"加载更多车型",
+            loading:"加载中...",
+            noMore:"没有更多车型了"
+          },
+          carDetails: {
+            dailyRate:"日租价格",
+            weeklyRate:"周租价格",
+            monthlyRate:"月租价格",
+            specifications:"车辆规格",
+            featuresTitle:"车辆配置",
+            features:{ bluetooth:"蓝牙", navigation:"导航", cruiseControl:"巡航控制", parkingSensors:"停车传感器" },
+            bookNow:"立即预订",
+            callUs:"电话咨询"
+          },
+          services: {
+            title:"我们的服务",
+            subtitle:"提供全方位的租车服务，满足您的各种需求。",
+            withDriver:{ title:"带司机服务", description:"专业司机为您提供安全、舒适的出行服务，让您专注于商务或休闲。", price:"₱200/天起" },
+            delivery:{ title:"送车上门服务", description:"我们将车辆送到您指定的地点，节省您的时间，提供最大的便利。", price:"₱50/次起" },
+            carWash:{ title:"洗车服务", description:"专业洗车服务，让您的爱车始终保持清洁亮丽，提升出行体验。", price:"₱80/次起" },
+            learnMore:"了解更多",
+            packages:{
+              title:"服务套餐",
+              perDay:"/天",
+              popular:"最受欢迎",
+              basic:{ title:"基础套餐", car:"经济型轿车", insurance:"基础保险", unlimited:"不限里程", driver:"司机服务", delivery:"送车上门" },
+              standard:{ title:"标准套餐", car:"中级轿车/SUV", insurance:"全面保险", unlimited:"不限里程", delivery:"送车上门", driver:"司机服务" },
+              premium:{ title:"豪华套餐", car:"豪华轿车/SUV", insurance:"高级保险", unlimited:"不限里程", delivery:"送车上门", driver:"专业司机服务" },
+              select:"选择套餐"
+            }
+          },
+          about: {
+            title:"关于Aero car rental",
+            description1:"Aero car rental成立于2010年，是一家专业的汽车租赁服务提供商，致力于为客户提供高品质、便捷的租车体验。",
+            description2:"我们拥有多样化的车型选择，从经济实惠的紧凑型车到豪华轿车和SUV，满足不同客户的需求。同时，我们提供灵活的租赁方案，包括日租、周租和月租，以及带司机、送车上门等增值服务。",
+            years:"年行业经验",
+            vehicles:"车辆数量",
+            customers:"满意客户",
+            support:"全天候支持",
+            contactUs:"联系我们"
+          },
+          contact: {
+            title:"联系我们",
+            subtitle:"如果您有任何问题或需要帮助，请随时联系我们。",
+            form:{ name:"姓名", email:"邮箱", phone:"电话", message:"留言", submit:"发送消息" },
+            info:"联系信息",
+            address:"地址",
+            addressDetail:"（请替换为你在菲律宾的真实地址）",
+            phone:"电话",
+            phoneDetail:"（请替换为你的号码）",
+            email:"邮箱",
+            emailDetail:"（请替换为你的邮箱）",
+            hours:"营业时间",
+            weekdays:"周一至周五: 8:00 - 20:00",
+            weekends:"周六至周日: 9:00 - 18:00",
+            follow:"关注我们"
+          },
+          footer: {
+            description:"提供高品质的租车服务，满足您的每一个需求。",
+            quickLinks:"快速链接",
+            services:"我们的服务",
+            support:"支持",
+            longTerm:"长期租车",
+            airport:"机场接送",
+            insurance:"车辆保险",
+            faq:"常见问题",
+            terms:"条款与条件",
+            privacy:"隐私政策",
+            rentalAgreement:"租车协议",
+            insuranceInfo:"保险信息",
+            complaints:"投诉与建议",
+            cookies:"Cookie政策",
+            copyright:"© 2026 Aero car rental. 保留所有权利."
+          }
+        }
+      },
+
+      "en-US": {
+        translation: {
+          brand: "Aero car rental",
+          language: "Language",
+          nav: { home:"Home", cars:"Vehicles", services:"Services", booking:"Booking", about:"About", login:"Login" },
+          hero: {
+            title: "Professional Car Rental Service\nMeet All Your Needs",
+            subtitle: "Daily, monthly rentals, chauffeured service, door delivery and more — convenient and comfortable.",
+            bookNow:"Book Now",
+            viewCars:"View Vehicles"
+          },
+          booking: {
+            title:"Quick Booking",
+            pickupLocation:"Pickup Location",
+            pickupDate:"Pickup Date",
+            returnDate:"Return Date",
+            rentalType:"Rental Type",
+            locations:{ airport:"Airport", downtown:"Downtown", hotel:"Hotel", home:"Door Delivery" },
+            types:{ daily:"Daily", weekly:"Weekly", monthly:"Monthly", withDriver:"With Driver" },
+            search:"Search Vehicles"
+          },
+          brands: { audi:"Audi", bmw:"BMW", mercedes:"Mercedes", toyota:"Toyota", volvo:"Volvo", haval:"Haval" },
+          models: {
+            bentleyMulsanne:"Bentley Mulsanne",
+            toyotaHighlander:"Toyota Highlander",
+            audiA7:"Audi A7",
+            mercedesVClass:"Mercedes V-Class",
+            volvoS90:"Volvo S90",
+            havalH7:"Haval H7"
+          },
+          cars: {
+            title:"Our Vehicle Fleet",
+            subtitle:"A variety of quality vehicles for different needs and budgets.",
+            filters:{ type:"Type", brand:"Brand", price:"Price Range", seats:"Seats", all:"All", sedan:"Sedan", suv:"SUV", van:"Van", luxury:"Luxury" },
+            seats:{ "2":"2 seats","4":"4 seats","5":"5 seats","7":"7 seats","9plus":"9+ seats" },
+            featured:"Featured",
+            popular:"Popular",
+            economy:"Economy",
+            perDay:"/day",
+            viewDetails:"View Details",
+            bookNow:"Book Now",
+            loadMore:"Load More Vehicles",
+            loading:"Loading...",
+            noMore:"No more vehicles"
+          },
+          carDetails: {
+            dailyRate:"Daily Rate",
+            weeklyRate:"Weekly Rate",
+            monthlyRate:"Monthly Rate",
+            specifications:"Specifications",
+            featuresTitle:"Features",
+            features:{ bluetooth:"Bluetooth", navigation:"Navigation", cruiseControl:"Cruise Control", parkingSensors:"Parking Sensors" },
+            bookNow:"Book Now",
+            callUs:"Call Us"
+          },
+          services: {
+            title:"Our Services",
+            subtitle:"Comprehensive car rental services to meet all your needs.",
+            withDriver:{ title:"Chauffeured Service", description:"Professional drivers provide safe and comfortable rides for business or leisure.", price:"From ₱200/day" },
+            delivery:{ title:"Door-to-Door Delivery", description:"We deliver the vehicle to your location for maximum convenience.", price:"From ₱50/each" },
+            carWash:{ title:"Car Wash Service", description:"Keep your car clean and shiny to improve your experience.", price:"From ₱80/each" },
+            learnMore:"Learn More",
+            packages:{
+              title:"Service Packages",
+              perDay:"/day",
+              popular:"Most Popular",
+              basic:{ title:"Basic", car:"Economy Car", insurance:"Basic Insurance", unlimited:"Unlimited Mileage", driver:"Driver Service", delivery:"Door Delivery" },
+              standard:{ title:"Standard", car:"Mid-size Car/SUV", insurance:"Comprehensive Insurance", unlimited:"Unlimited Mileage", delivery:"Door Delivery", driver:"Driver Service" },
+              premium:{ title:"Premium", car:"Luxury Car/SUV", insurance:"Premium Insurance", unlimited:"Unlimited Mileage", delivery:"Door Delivery", driver:"Professional Driver" },
+              select:"Select Package"
+            }
+          },
+          about: {
+            title:"About Aero car rental",
+            description1:"Founded in 2010, Aero car rental delivers high-quality and convenient car rental experiences.",
+            description2:"We offer vehicles from compact economy to luxury sedans and SUVs, plus flexible daily/weekly/monthly plans and add-on services like chauffeured rides and door delivery.",
+            years:"Years of Experience",
+            vehicles:"Vehicles",
+            customers:"Happy Customers",
+            support:"24/7 Support",
+            contactUs:"Contact Us"
+          },
+          contact: {
+            title:"Contact Us",
+            subtitle:"If you have any questions, feel free to reach out.",
+            form:{ name:"Name", email:"Email", phone:"Phone", message:"Message", submit:"Send Message" },
+            info:"Contact Information",
+            address:"Address",
+            addressDetail:"(Replace with your real PH address)",
+            phone:"Phone",
+            phoneDetail:"(Replace with your number)",
+            email:"Email",
+            emailDetail:"(Replace with your email)",
+            hours:"Business Hours",
+            weekdays:"Mon–Fri: 8:00 - 20:00",
+            weekends:"Sat–Sun: 9:00 - 18:00",
+            follow:"Follow Us"
+          },
+          footer: {
+            description:"High-quality car rental services for all your needs.",
+            quickLinks:"Quick Links",
+            services:"Services",
+            support:"Support",
+            longTerm:"Long-term Rental",
+            airport:"Airport Transfer",
+            insurance:"Vehicle Insurance",
+            faq:"FAQ",
+            terms:"Terms & Conditions",
+            privacy:"Privacy Policy",
+            rentalAgreement:"Rental Agreement",
+            insuranceInfo:"Insurance Info",
+            complaints:"Complaints",
+            cookies:"Cookie Policy",
+            copyright:"© 2026 Aero car rental. All rights reserved."
+          }
+        }
+      }
+    };
+
+    // ---------- i18next init ----------
+    i18next.init({
+      resources,
+      lng: "zh-CN",
+      fallbackLng: "en-US",
+      interpolation: { escapeValue: false }
+    }, () => updateContent());
+
+    function setLangUI(lang){
+      document.documentElement.lang = lang;
+      document.getElementById("current-language").textContent = (lang === "zh-CN") ? "中文" : "English";
+
+      // mobile buttons styling
+      document.querySelectorAll(".language-btn").forEach(btn => {
+        const isActive = btn.getAttribute("data-lang") === lang;
+        btn.classList.toggle("bg-[#0A2463]", isActive);
+        btn.classList.toggle("text-white", isActive);
+        btn.classList.toggle("bg-gray-200", !isActive);
+      });
+    }
+
+    // text-only update (so Chinese page is pure Chinese; English page pure English)
+    function updateContent() {
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        const val = i18next.t(key);
+
+        // set option text safely too
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+          // not used currently, but kept for completeness
+          el.value = val;
+        } else {
+          el.textContent = val;
+        }
+      });
+
+      setLangUI(i18next.language);
+    }
+
+    // Language switcher
+    document.querySelectorAll(".language-option, .language-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const lang = this.getAttribute("data-lang");
+        i18next.changeLanguage(lang, () => updateContent());
+      });
+    });
+
+    // Mobile menu toggle
+    document.getElementById("mobile-menu-button").addEventListener("click", () => {
+      document.getElementById("mobile-menu-dropdown").classList.toggle("hidden");
+    });
+
+    // Price range slider (PHP only)
+    const priceRange = document.getElementById("price-range");
+    const priceDisplay = document.getElementById("price-display");
+
+    function updatePriceDisplay() {
+      const value = Number(priceRange.value);
+      if (value === Number(priceRange.max)) priceDisplay.textContent = `₱${value}+`;
+      else priceDisplay.textContent = `₱${value}`;
+    }
+
+    if (priceRange && priceDisplay) {
+      priceRange.addEventListener("input", () => {
+        updatePriceDisplay();
+        filterCars();
+      });
+      updatePriceDisplay();
+    }
+
+    // Filters
+    document.getElementById("car-type-filter").addEventListener("change", filterCars);
+    document.getElementById("car-brand-filter").addEventListener("change", filterCars);
+    document.getElementById("seats-filter").addEventListener("change", filterCars);
+
+    function filterCars() {
+      const typeFilter = document.getElementById("car-type-filter").value;
+      const brandFilter = document.getElementById("car-brand-filter").value;
+      const priceFilter = Number(document.getElementById("price-range").value);
+      const seatsFilter = document.getElementById("seats-filter").value;
+
+      document.querySelectorAll("#car-listings .car-card").forEach(card => {
+        const type = card.getAttribute("data-type");
+        const brand = card.getAttribute("data-brand");
+        const price = Number(card.getAttribute("data-price"));
+        const seatsNum = Number(card.getAttribute("data-seats"));
+
+        const typeMatch = (typeFilter === "all" || type === typeFilter);
+        const brandMatch = (brandFilter === "all" || brand === brandFilter);
+        const priceMatch = (price <= priceFilter);
+
+        let seatsMatch = true;
+        if (seatsFilter !== "all") {
+          if (seatsFilter === "9+") seatsMatch = seatsNum >= 9;
+          else seatsMatch = seatsNum === Number(seatsFilter);
+        }
+
+        card.style.display = (typeMatch && brandMatch && priceMatch && seatsMatch) ? "block" : "none";
+      });
+    }
+
+    // Modal
+    const modal = document.getElementById("car-details-modal");
+    const closeModal = document.getElementById("close-modal");
+
+    document.querySelectorAll(".view-details-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        openCarDetails(this.getAttribute("data-car-id"));
+      });
+    });
+
+    closeModal.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      document.body.style.overflow = "auto";
+    });
+
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "auto";
+      }
+    });
+
+    // Details data (PHP only)
+    const carDetails = {
+      "1": { titleKey:"models.bentleyMulsanne", image:"https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/f0ea121030f0411da3deebf7aa135cc6~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=zza%2FXeIqssl8Tk1tLnkMC7y1zco%3D", price:1200, weekly:7000, monthly:25000, seats:5, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"4个行李箱",en:"4 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"豪华轿车",en:"Luxury Sedan"} },
+      "2": { titleKey:"models.toyotaHighlander", image:"https://p26-doubao-search-sign.byteimg.com/labis/be5b7e593335b4da1ded8cb1249a0cec~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=ylh2pl%2Bw5kFcqUlV7vfJpS%2Bs6pk%3D", price:500, weekly:3000, monthly:10000, seats:7, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"5个行李箱",en:"5 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"SUV",en:"SUV"} },
+      "3": { titleKey:"models.audiA7", image:"https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/679935761a14474b82255871fecfb986~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=jDdaCxgfXmwu9A%2BqZH6CQXr7YU0%3D", price:600, weekly:3500, monthly:12000, seats:5, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"3个行李箱",en:"3 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"轿车",en:"Sedan"} },
+      "4": { titleKey:"models.mercedesVClass", image:"https://p3-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/2021c923a31e4713908c0b7ea46b7fa4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=oGs%2BDQUMuKK2fGDLhNARCgVxwKs%3D", price:800, weekly:4800, monthly:16000, seats:9, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"6个行李箱",en:"6 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"商务车",en:"Van"} },
+      "5": { titleKey:"models.volvoS90", image:"https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/abf692a8eaae4b6184697a4d48081ebf~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=29fpZ7J%2BEN81ejrIMLeFfMQpIBQ%3D", price:450, weekly:2700, monthly:9000, seats:5, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"3个行李箱",en:"3 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"轿车",en:"Sedan"} },
+      "6": { titleKey:"models.havalH7", image:"https://p11-doubao-search-sign.byteimg.com/pgc-image/3a54bf231a684a46911e9d8cfd585e90~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=tt5FyQlcICYQOlt6pBdq0zbjt1U%3D", price:350, weekly:2100, monthly:7000, seats:5, transmission:"AT", fuelKey:{zh:"汽油",en:"Gasoline"}, luggageKey:{zh:"4个行李箱",en:"4 suitcases"}, acKey:{zh:"空调",en:"AC"}, typeKey:{zh:"SUV",en:"SUV"} }
+    };
+
+    function fmtPHP(n){ return `₱${Number(n).toLocaleString("en-US")}`; }
+
+    function openCarDetails(carId) {
+      const car = carDetails[carId];
+      if (!car) return;
+
+      const lang = i18next.language;
+      const isZH = (lang === "zh-CN");
+
+      document.getElementById("modal-car-title").textContent = i18next.t(car.titleKey);
+      document.getElementById("modal-car-image").src = car.image;
+
+      document.getElementById("modal-car-price").textContent = fmtPHP(car.price);
+      document.getElementById("modal-car-weekly-price").textContent = fmtPHP(car.weekly);
+      document.getElementById("modal-car-monthly-price").textContent = fmtPHP(car.monthly);
+
+      document.getElementById("modal-car-seats").textContent = `${car.seats} ${isZH ? "座" : "seats"}`;
+      document.getElementById("modal-car-transmission").textContent = car.transmission;
+      document.getElementById("modal-car-fuel").textContent = isZH ? car.fuelKey.zh : car.fuelKey.en;
+      document.getElementById("modal-car-luggage").textContent = isZH ? car.luggageKey.zh : car.luggageKey.en;
+      document.getElementById("modal-car-ac").textContent = isZH ? car.acKey.zh : car.acKey.en;
+      document.getElementById("modal-car-type").textContent = isZH ? car.typeKey.zh : car.typeKey.en;
+
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+
+      initCarModel(); // re-render
+      updateContent(); // keep modal text aligned to chosen language
+    }
+
+    // Three.js model (no duplicate events)
+    function initCarModel() {
+      const container = document.getElementById("car-model-container");
+      while (container.firstChild) container.removeChild(container.firstChild);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf0f0f0);
+
+      const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.z = 5;
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+      dir.position.set(1, 1, 1);
+      scene.add(dir);
+
+      const carGroup = new THREE.Group();
+
+      const carBody = new THREE.BoxGeometry(3, 0.8, 1.5);
+      const carMaterial = new THREE.MeshPhongMaterial({ color: 0x0A2463 });
+
+      const car = new THREE.Mesh(carBody, carMaterial);
+      carGroup.add(car);
+
+      const topGeometry = new THREE.BoxGeometry(1.5, 0.6, 1.3);
+      const top = new THREE.Mesh(topGeometry, carMaterial);
+      top.position.y = 0.7;
+      carGroup.add(top);
+
+      const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
+      const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+
+      function mkWheel(x, z) {
+        const w = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(x, -0.4, z);
+        carGroup.add(w);
+      }
+      mkWheel(1, 0.8); mkWheel(1, -0.8); mkWheel(-1, 0.8); mkWheel(-1, -0.8);
+
+      scene.add(carGroup);
+
+      let rafId = null;
+      function animate() {
+        rafId = requestAnimationFrame(animate);
+        carGroup.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // resize
+      const onResize = () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      };
+      window.addEventListener("resize", onResize, { passive: true });
+
+      // color change (overwrite handler, not add)
+      document.querySelectorAll(".car-color-btn").forEach(btn => {
+        btn.onclick = function () {
+          const color = this.getAttribute("data-color");
+          let hex = 0x0A2463;
+          if (color === "gray") hex = 0x333333;
+          if (color === "blue") hex = 0x0A2463;
+          if (color === "red") hex = 0xD8315B;
+          if (color === "white") hex = 0xFFFFFF;
+          car.material.color.setHex(hex);
+          top.material.color.setHex(hex);
+        };
+      });
+
+      // cleanup when modal closes (avoid runaway)
+      const cleanup = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        window.removeEventListener("resize", onResize);
+        closeModal.removeEventListener("click", cleanup);
+      };
+      closeModal.addEventListener("click", cleanup);
+    }
+
+    // Back to top
+    const backToTopBtn = document.getElementById("back-to-top");
+    window.addEventListener("scroll", () => {
+      if (window.pageYOffset > 300) backToTopBtn.classList.remove("hidden");
+      else backToTopBtn.classList.add("hidden");
+    }, { passive: true });
+
+    backToTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+    // Search cars button
+    document.getElementById("search-cars-btn").addEventListener("click", () => {
+      document.getElementById("cars").scrollIntoView({ behavior: "smooth" });
+    });
+
+    // Load more button (i18n-safe)
+    document.getElementById("load-more-cars").addEventListener("click", function () {
+      this.disabled = true;
+      this.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i><span data-i18n="cars.loading"></span>`;
+      updateContent();
+
+      setTimeout(() => {
+        this.innerHTML = `<span data-i18n="cars.noMore"></span>`;
+        this.classList.add("opacity-50", "cursor-not-allowed");
+        updateContent();
+      }, 1500);
+    });
+
+    // Date min
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    if (dateInputs.length >= 2) {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const formatDate = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+
+      dateInputs[0].min = formatDate(today);
+      dateInputs[1].min = formatDate(tomorrow);
+
+      dateInputs[0].addEventListener("change", function () {
+        const selected = new Date(this.value);
+        const next = new Date(selected);
+        next.setDate(next.getDate() + 1);
+
+        dateInputs[1].min = formatDate(next);
+        if (dateInputs[1].value && new Date(dateInputs[1].value) < next) {
+          dateInputs[1].value = formatDate(next);
+        }
+      });
+    }
+
+    // Default language label
+    setLangUI("zh-CN");
+  </script>
+</body>
+</html>
