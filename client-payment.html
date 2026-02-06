@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Payment</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="client-home.html" class="font-bold text-xl">Aero car rental</a>
+      <button id="go-back-btn" type="button" class="text-sm hover:underline">← Back</button>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <section class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+      <h1 id="title" class="text-2xl font-bold text-[#0A2463] mb-2"></h1>
+      <p id="subtitle" class="text-gray-600 mb-6"></p>
+
+      <div id="not-found" class="hidden mb-5 p-3 bg-red-100 text-red-700 rounded"></div>
+
+      <div id="pay-panel" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-3">
+          <div class="bg-gray-50 rounded-lg p-4 text-sm space-y-2">
+            <div class="flex justify-between"><span id="l-order"></span><strong id="order-id">-</strong></div>
+            <div class="flex justify-between"><span id="l-car"></span><strong id="order-car">-</strong></div>
+            <div class="flex justify-between"><span id="l-total"></span><strong id="order-total">-</strong></div>
+            <div class="flex justify-between"><span id="l-method"></span><strong id="order-method">-</strong></div>
+          </div>
+
+          <label class="block text-sm text-gray-600" id="methodLabel"></label>
+          <select id="method-select" class="w-full border rounded px-3 py-2">
+            <option value="online_card">Credit Card</option>
+            <option value="online_debit">Debit Card</option>
+            <option value="online_gcash">GCash</option>
+            <option value="online_maya">Maya</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col items-center justify-center gap-3">
+          <div class="w-56 h-56 bg-white border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-center px-2">
+            <canvas id="fake-qr-canvas" width="200" height="200" class="rounded"></canvas>
+          </div>
+          <div id="qr-text" class="text-xs text-gray-600 break-all"></div>
+          <div id="scanTip" class="text-sm text-gray-600"></div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button id="pay-success-btn" class="px-6 py-3 bg-[#0A2463] text-white rounded-md">Pay Success</button>
+        <button id="back-booking-btn" class="px-6 py-3 border rounded-md">Back to Booking</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_LANG = "aeroLang";
+    const STORAGE_SITE_SETTINGS = "aeroSiteSettings";
+    const lang = localStorage.getItem(STORAGE_LANG) || "zh-CN";
+
+    const I18N = {
+      "zh-CN": {
+        title:"在线支付", subtitle:"请完成支付，支付成功后订单将自动确认。", notFound:"订单不存在或不需要在线支付。",
+        order:"订单号", car:"车型", total:"金额", method:"支付方式", methodLabel:"请选择支付方式", scanTip:"请使用对应APP扫码支付",
+        paySuccess:"支付成功", backBooking:"返回修改订单", back:"返回上一步"
+      },
+      "en-US": {
+        title:"Online Payment", subtitle:"Complete payment to auto-confirm your booking.", notFound:"Order not found or this order does not require online payment.",
+        order:"Order ID", car:"Vehicle", total:"Amount", method:"Method", methodLabel:"Choose Payment Method", scanTip:"Scan QR with your selected app",
+        paySuccess:"Payment Success", backBooking:"Back to Booking", back:"Back"
+      }
+    };
+    const t = (k) => I18N[lang][k] || k;
+
+    function readOrders(){ try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function saveOrders(v){ localStorage.setItem(STORAGE_ORDERS, JSON.stringify(v)); }
+    function fmt(n){ return `₱${Number(n || 0).toLocaleString("en-US")}`; }
+    function getSiteSettings() {
+      try {
+        const v = JSON.parse(localStorage.getItem(STORAGE_SITE_SETTINGS) || "null");
+        return v || {};
+      } catch (_) { return {}; }
+    }
+    function drawFakeQr(payload) {
+      const canvas = document.getElementById("fake-qr-canvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const size = 25;
+      const cell = Math.floor(canvas.width / size);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      let seed = 0;
+      for (let i = 0; i < payload.length; i += 1) seed = (seed * 31 + payload.charCodeAt(i)) >>> 0;
+      const rand = () => {
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        return seed / 0xffffffff;
+      };
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+          const finder = (x < 7 && y < 7) || (x > size - 8 && y < 7) || (x < 7 && y > size - 8);
+          let dark = rand() > 0.55;
+          if (finder) {
+            const inBorder = x % (size - 1) < 7 && y % (size - 1) < 7;
+            dark = inBorder;
+          }
+          if (dark) {
+            ctx.fillStyle = "#111";
+            ctx.fillRect(x * cell, y * cell, cell, cell);
+          }
+        }
+      }
+    }
+
+    const orderId = new URLSearchParams(window.location.search).get("orderId") || "";
+    let orders = readOrders();
+    let order = orders.find((o) => o.orderId === orderId);
+
+    document.documentElement.lang = lang;
+    document.getElementById("title").textContent = t("title");
+    document.getElementById("subtitle").textContent = t("subtitle");
+    document.getElementById("l-order").textContent = t("order");
+    document.getElementById("l-car").textContent = t("car");
+    document.getElementById("l-total").textContent = t("total");
+    document.getElementById("l-method").textContent = t("method");
+    document.getElementById("methodLabel").textContent = t("methodLabel");
+    document.getElementById("scanTip").textContent = t("scanTip");
+    document.getElementById("pay-success-btn").textContent = t("paySuccess");
+    document.getElementById("back-booking-btn").textContent = t("backBooking");
+    document.getElementById("go-back-btn").textContent = `← ${t("back")}`;
+
+    if (!order || !(String(order.payment || "").startsWith("online_"))) {
+      document.getElementById("not-found").classList.remove("hidden");
+      document.getElementById("not-found").textContent = t("notFound");
+      document.getElementById("pay-panel").classList.add("hidden");
+      document.getElementById("pay-success-btn").disabled = true;
+      document.getElementById("pay-success-btn").classList.add("opacity-60", "cursor-not-allowed");
+    } else {
+      document.getElementById("order-id").textContent = order.orderId;
+      document.getElementById("order-car").textContent = order.carName || "-";
+      document.getElementById("order-total").textContent = fmt(order.total || 0);
+      document.getElementById("order-method").textContent = order.paymentMethod || "-";
+      document.getElementById("method-select").value = order.payment || "online_card";
+      const prefix = getSiteSettings()?.payment?.fakeQrPrefix || "AERO-PAY";
+      const payload = `${prefix}:${order.orderId}:${order.total || 0}:${order.paymentMethod || ""}`;
+      document.getElementById("qr-text").textContent = payload;
+      drawFakeQr(payload);
+    }
+
+    document.getElementById("go-back-btn").addEventListener("click", () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = `client-booking.html?carId=${encodeURIComponent(order?.vehicleId || "")}`;
+    });
+
+    document.getElementById("back-booking-btn").addEventListener("click", () => {
+      const q = new URLSearchParams({ carId: order?.vehicleId || "", carName: order?.carName || "", rate: String(order?.dailyRate || "") });
+      window.location.href = `client-booking.html?${q.toString()}`;
+    });
+
+    document.getElementById("method-select").addEventListener("change", (e) => {
+      if (!order) return;
+      const code = e.target.value;
+      let method = "Credit Card";
+      if (code === "online_debit") method = "Debit Card";
+      if (code === "online_gcash") method = "GCash";
+      if (code === "online_maya") method = "Maya";
+      order.payment = code;
+      order.paymentMethod = method;
+      document.getElementById("order-method").textContent = method;
+      const prefix = getSiteSettings()?.payment?.fakeQrPrefix || "AERO-PAY";
+      const payload = `${prefix}:${order.orderId}:${order.total || 0}:${method}`;
+      document.getElementById("qr-text").textContent = payload;
+      drawFakeQr(payload);
+    });
+
+    document.getElementById("pay-success-btn").addEventListener("click", () => {
+      if (!order) return;
+      const now = new Date().toISOString();
+      order.status = (lang === "zh-CN") ? "已确认" : "Confirmed";
+      order.paymentDate = now;
+      order.paymentChannel = "QR Online";
+      order.updatedAt = now;
+      orders = orders.map((o) => (o.orderId === order.orderId ? order : o));
+      saveOrders(orders);
+      window.location.href = `client-confirmation.html?orderId=${encodeURIComponent(order.orderId)}`;
+    });
+  </script>
+</body>
+</html>

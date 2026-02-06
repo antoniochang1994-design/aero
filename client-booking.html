@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="client-home.html" class="font-bold text-xl">Aero car rental</a>
+      <div class="flex items-center gap-4 text-sm">
+        <button id="go-back-btn" type="button" class="hover:underline">← Back</button>
+        <a href="client-orders.html" class="hover:underline" data-i18n="orders"></a>
+        <a href="client-home.html#cars" class="hover:underline" data-i18n="backCars"></a>
+        <div class="flex border border-white/30 rounded overflow-hidden">
+          <button class="lang-btn px-2 py-1" data-lang="zh-CN">中</button>
+          <button class="lang-btn px-2 py-1" data-lang="en-US">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 bg-white rounded-lg shadow p-6">
+      <div id="login-tip" class="hidden mb-4 p-3 bg-yellow-100 text-yellow-900 rounded-md text-sm"></div>
+      <h1 class="text-2xl font-bold text-[#0A2463] mb-6" data-i18n="title"></h1>
+      <form id="booking-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm mb-1" data-i18n="name"></label><input required name="name" id="name" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="phone"></label><input required name="phone" id="phone" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="email"></label><input required type="email" name="email" id="email" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="idNo"></label><input required name="idNo" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="licenseNo"></label><input required name="licenseNo" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="pickup"></label><select required name="pickup" id="pickupSelect" class="w-full border rounded-md px-3 py-2"></select></div>
+          <div><label class="block text-sm mb-1" data-i18n="pickupDate"></label><input required type="date" name="pickupDate" id="pickupDate" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="pickupTime"></label><input required type="time" name="pickupTime" id="pickupTime" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="returnDate"></label><input required type="date" name="returnDate" id="returnDate" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="returnTime"></label><input required type="time" name="returnTime" id="returnTime" class="w-full border rounded-md px-3 py-2" /></div>
+          <div><label class="block text-sm mb-1" data-i18n="color"></label><select required name="color" id="colorSelect" class="w-full border rounded-md px-3 py-2"></select></div>
+          <div><label class="block text-sm mb-1" data-i18n="rentalType"></label><select required name="rentalType" id="rentalTypeSelect" class="w-full border rounded-md px-3 py-2"></select></div>
+          <div><label class="block text-sm mb-1" data-i18n="purpose"></label><select name="purpose" id="purposeSelect" class="w-full border rounded-md px-3 py-2"></select></div>
+          <div><label class="block text-sm mb-1" data-i18n="payment"></label><select name="payment" id="paymentSelect" class="w-full border rounded-md px-3 py-2"></select></div>
+        </div>
+        <div><label class="block text-sm mb-1" data-i18n="note"></label><textarea name="note" rows="3" class="w-full border rounded-md px-3 py-2"></textarea></div>
+        <button id="submit-btn" type="submit" class="w-full bg-[#0A2463] text-white py-3 rounded-md font-medium hover:bg-[#123884]" data-i18n="submit"></button>
+      </form>
+    </section>
+
+    <aside class="bg-white rounded-lg shadow p-6 h-fit">
+      <h2 class="text-xl font-bold mb-4" data-i18n="summary"></h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span data-i18n="car"></span><strong id="carName">-</strong></div>
+        <div class="flex justify-between"><span data-i18n="package"></span><strong id="packageName">-</strong></div>
+        <div class="flex justify-between"><span data-i18n="dailyRate"></span><strong id="dailyRate">₱0</strong></div>
+        <div class="flex justify-between"><span data-i18n="days"></span><strong id="days">1</strong></div>
+        <div class="flex justify-between"><span data-i18n="deposit"></span><strong id="deposit">₱2,000</strong></div>
+        <hr />
+        <div class="flex justify-between text-base"><span data-i18n="total"></span><strong class="text-[#0A2463]" id="total">₱0</strong></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const STORAGE_CURRENT_USER = "aeroCurrentUser";
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_FLEET_MODELS = "aeroFleetModels";
+    const STORAGE_FLEET_UNITS = "aeroFleetUnits";
+    const STORAGE_MODEL_PRICING = "aeroModelPricing";
+    const STORAGE_LANG = "aeroLang";
+    const STORAGE_BOOKING_DRAFT = "aeroBookingDraft";
+    const STORAGE_SITE_SETTINGS = "aeroSiteSettings";
+    const lang = localStorage.getItem(STORAGE_LANG) || "zh-CN";
+
+    const I18N = {
+      "zh-CN": {
+        orders:"我的订单", backCars:"返回车型", title:"填写预订信息", name:"姓名", phone:"手机号码", email:"邮箱", idNo:"身份证/护照号", licenseNo:"驾照号码",
+        pickup:"取车地点", pickupDate:"取车日期", pickupTime:"取车时间", returnDate:"还车日期", returnTime:"还车时间", color:"车辆颜色", pickupAddress:"取车地址", deliveryAddress:"送车地址",
+        rentalType:"租赁类型",
+        purpose:"用车目的", payment:"支付方式", note:"备注", submit:"提交订单", summary:"订单预览", car:"车型", package:"套餐", dailyRate:"日租价格", days:"租期天数", deposit:"押金", total:"预估总价",
+        loginFirst:"请先登录再下单", goLogin:"前往登录", business:"商务", travel:"旅游", family:"家庭出行", pending:"待确认", pendingPay:"待支付",
+        airport:"机场", downtown:"市中心", hotel:"酒店", delivery:"上门送车",
+        payOnlineCard:"在线支付 - 信用卡", payOnlineDebit:"在线支付 - 储蓄卡", payOnlineGcash:"在线支付 - GCash", payOnlineMaya:"在线支付 - Maya",
+        payOfflineCash:"线下支付 - 现金", payOfflineCounter:"线下支付 - 门店柜台",
+        soldOut:"该车型在所选日期已被订满，请更换日期或车型。", noColors:"所选日期没有可用颜色，请调整日期。",
+        back:"返回上一步",
+        confirmSubmit:"确认提交订单吗？"
+      },
+      "en-US": {
+        orders:"My Orders", backCars:"Back to Cars", title:"Booking Information", name:"Name", phone:"Phone", email:"Email", idNo:"ID / Passport", licenseNo:"Driver License",
+        pickup:"Pickup Location", pickupDate:"Pickup Date", pickupTime:"Pickup Time", returnDate:"Return Date", returnTime:"Return Time", color:"Vehicle Color", pickupAddress:"Pickup Address", deliveryAddress:"Delivery Address",
+        rentalType:"Rental Type",
+        purpose:"Purpose", payment:"Payment Method", note:"Note", submit:"Place Order", summary:"Order Summary", car:"Car", package:"Package", dailyRate:"Daily Rate", days:"Days", deposit:"Deposit", total:"Estimated Total",
+        loginFirst:"Please login first", goLogin:"Go login", business:"Business", travel:"Travel", family:"Family", pending:"Pending", pendingPay:"Pending Payment",
+        airport:"Airport", downtown:"Downtown", hotel:"Hotel", delivery:"Door Delivery",
+        payOnlineCard:"Online - Credit Card", payOnlineDebit:"Online - Debit Card", payOnlineGcash:"Online - GCash", payOnlineMaya:"Online - Maya",
+        payOfflineCash:"Offline - Cash", payOfflineCounter:"Offline - Counter",
+        soldOut:"This vehicle is fully booked in the selected date range.", noColors:"No colors available in this date range. Please change dates.",
+        back:"Back",
+        confirmSubmit:"Confirm placing this order?"
+      }
+    };
+    const t = (k) => I18N[lang][k] || k;
+
+    const params = new URLSearchParams(window.location.search);
+    const packageMap = { basic: "基础套餐", standard: "标准套餐", premium: "豪华套餐" };
+    const packageRateMap = { basic: 299, standard: 599, premium: 999 };
+    const packageType = params.get("package") || "";
+    const vehicleId = params.get("carId") || (packageType ? "FLEET" : "");
+    let carName = params.get("carName") || (packageType ? `${packageMap[packageType]}推荐车型` : "通用车型");
+    let rate = Number(params.get("rate") || packageRateMap[packageType] || 0);
+
+    const currentUser = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_CURRENT_USER) || "null"); } catch (_) { return null; } })();
+
+    function fmt(n) { return `₱${Number(n).toLocaleString("en-US")}`; }
+    function toDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+    function readOrders() { try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function saveOrders(orders) { localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders)); }
+    function readFleetModels() { try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_MODELS) || "[]"); } catch (_) { return []; } }
+    function readFleetUnits() { try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_UNITS) || "[]"); } catch (_) { return []; } }
+    function saveFleetModels(v) { localStorage.setItem(STORAGE_FLEET_MODELS, JSON.stringify(v)); }
+    function saveFleetUnits(v) { localStorage.setItem(STORAGE_FLEET_UNITS, JSON.stringify(v)); }
+    function readModelPricing() { try { return JSON.parse(localStorage.getItem(STORAGE_MODEL_PRICING) || "{}"); } catch (_) { return {}; } }
+    function saveModelPricing(v) { localStorage.setItem(STORAGE_MODEL_PRICING, JSON.stringify(v)); }
+    function readSiteSettings() { try { return JSON.parse(localStorage.getItem(STORAGE_SITE_SETTINGS) || "null"); } catch (_) { return null; } }
+
+    function getSiteSettings() {
+      const defaults = {
+        pickupLocations: [
+          { key: "airport", zh: "机场", en: "Airport", address: "NAIA Terminal 3, Pasay" },
+          { key: "downtown", zh: "市中心", en: "Downtown", address: "Makati CBD Service Point" },
+          { key: "hotel", zh: "酒店", en: "Hotel", address: "Hotel concierge desk" },
+          { key: "delivery", zh: "送车上门", en: "Door Delivery", address: "Customer address required" }
+        ],
+        
+      };
+      const custom = readSiteSettings() || {};
+      return {
+        ...defaults,
+        ...custom,
+        pickupLocations: Array.isArray(custom.pickupLocations) && custom.pickupLocations.length ? custom.pickupLocations : defaults.pickupLocations
+      };
+    }
+
+    function ensureModelPricing() {
+      const { models } = ensureFleetData();
+      const current = readModelPricing();
+      const next = { ...current };
+      models.forEach((m) => {
+        const id = String(m.modelId);
+        if (!next[id]) {
+          const daily = Number(m.dailyRate || 0);
+          next[id] = {
+            daily,
+            weekly: Math.round(daily * 6.5),
+            monthly: Math.round(daily * 24),
+            withDriver: Math.round(daily + 500)
+          };
+        } else {
+          next[id] = {
+            daily: Number(next[id].daily || m.dailyRate || 0),
+            weekly: Number(next[id].weekly || Math.round((m.dailyRate || 0) * 6.5)),
+            monthly: Number(next[id].monthly || Math.round((m.dailyRate || 0) * 24)),
+            withDriver: Number(next[id].withDriver || Math.round((m.dailyRate || 0) + 500))
+          };
+        }
+      });
+      saveModelPricing(next);
+      return next;
+    }
+
+    function priceByRentalType(modelId, rentalType) {
+      const all = ensureModelPricing();
+      const modelPricing = all[String(modelId)] || {};
+      return Number(modelPricing[rentalType] || modelPricing.daily || 0);
+    }
+
+    function bookingDraftKey() {
+      const uid = currentUser && currentUser.id ? currentUser.id : "guest";
+      return `${STORAGE_BOOKING_DRAFT}:${uid}:${vehicleId || "generic"}`;
+    }
+
+    function saveDraft() {
+      const form = document.getElementById("booking-form");
+      if (!form) return;
+      const fd = new FormData(form);
+      const data = {};
+      fd.forEach((v, k) => { data[k] = String(v); });
+      data.vehicleId = vehicleId;
+      data.carName = carName;
+      data.rate = rate;
+      localStorage.setItem(bookingDraftKey(), JSON.stringify(data));
+    }
+
+    function loadDraft() {
+      try {
+        return JSON.parse(localStorage.getItem(bookingDraftKey()) || "null");
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function clearDraft() {
+      localStorage.removeItem(bookingDraftKey());
+    }
+
+    function seedUnitsForModel(modelId, count, model) {
+      const colors = ["Black", "White", "Silver", "Blue", "Red"];
+      const units = [];
+      for (let i = 1; i <= count; i += 1) {
+        units.push({
+          unitId: `${modelId}-${String(i).padStart(3, "0")}`,
+          modelId,
+          name: `${model.name || modelId} #${i}`,
+          color: colors[(i - 1) % colors.length],
+          fuelType: model.fuelType || "Gasoline",
+          transmission: model.transmission || "AT",
+          seats: Number(model.seats || 5),
+          plateNo: "",
+          mileage: 0,
+          active: true
+        });
+      }
+      return units;
+    }
+
+    function ensureFleetData() {
+      let models = readFleetModels();
+      let units = readFleetUnits();
+      const defaults = {
+        "1": { name: "Bentley Mulsanne", brand: "Bentley", type: "Luxury", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 4, dailyRate: 1200, image: "", description: "" },
+        "2": { name: "Toyota Highlander", brand: "Toyota", type: "SUV", seats: 7, fuelType: "Gasoline", transmission: "AT", luggage: 5, dailyRate: 500, image: "", description: "" },
+        "3": { name: "Audi A7", brand: "Audi", type: "Sedan", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 3, dailyRate: 600, image: "", description: "" },
+        "4": { name: "Mercedes V-Class", brand: "Mercedes", type: "Van", seats: 9, fuelType: "Diesel", transmission: "AT", luggage: 6, dailyRate: 800, image: "", description: "" },
+        "5": { name: "Volvo S90", brand: "Volvo", type: "Sedan", seats: 5, fuelType: "Hybrid", transmission: "AT", luggage: 3, dailyRate: 450, image: "", description: "" },
+        "6": { name: "Haval H7", brand: "Haval", type: "SUV", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 4, dailyRate: 350, image: "", description: "" },
+        "FLEET": { name: "Fleet Pool", brand: "Aero", type: "Mixed", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 3, dailyRate: 299, image: "", description: "" }
+      };
+
+      if (models.length && units.length) {
+        models = models.map((m) => {
+          const d = defaults[String(m.modelId)] || defaults.FLEET;
+          return {
+            ...m,
+            name: m.name || d.name,
+            brand: m.brand || d.brand,
+            type: m.type || d.type,
+            seats: Number(m.seats || d.seats),
+            fuelType: m.fuelType || d.fuelType || "Gasoline",
+            transmission: m.transmission || d.transmission || "AT",
+            luggage: Number(m.luggage || d.luggage || 3),
+            dailyRate: Number(m.dailyRate || d.dailyRate),
+            image: m.image || d.image,
+            description: m.description || d.description,
+            active: m.active !== false
+          };
+        });
+        units = units.map((u) => {
+          const model = models.find((m) => String(m.modelId) === String(u.modelId));
+          return {
+            ...u,
+            color: u.color || "Black",
+            fuelType: u.fuelType || (model ? model.fuelType : "Gasoline"),
+            transmission: u.transmission || (model ? model.transmission : "AT"),
+            seats: Number(u.seats || (model ? model.seats : 5)),
+            plateNo: u.plateNo || "",
+            mileage: Number(u.mileage || 0),
+            active: u.active !== false
+          };
+        });
+        saveFleetModels(models);
+        saveFleetUnits(units);
+        return { models, units };
+      }
+
+      models = [
+        { modelId: "1", ...defaults["1"], active: true },
+        { modelId: "2", ...defaults["2"], active: true },
+        { modelId: "3", ...defaults["3"], active: true },
+        { modelId: "4", ...defaults["4"], active: true },
+        { modelId: "5", ...defaults["5"], active: true },
+        { modelId: "6", ...defaults["6"], active: true },
+        { modelId: "FLEET", ...defaults.FLEET, active: true }
+      ];
+      units = [
+        ...seedUnitsForModel("1", 2, models[0]), ...seedUnitsForModel("2", 4, models[1]), ...seedUnitsForModel("3", 3, models[2]),
+        ...seedUnitsForModel("4", 2, models[3]), ...seedUnitsForModel("5", 3, models[4]), ...seedUnitsForModel("6", 5, models[5]), ...seedUnitsForModel("FLEET", 50, models[6])
+      ];
+      saveFleetModels(models);
+      saveFleetUnits(units);
+      return { models, units };
+    }
+
+    function statusKey(status) {
+      const s = String(status || "").toLowerCase();
+      if (s.includes("confirmed") || s.includes("已确认")) return "confirmed";
+      if (s.includes("rejected") || s.includes("已拒绝")) return "rejected";
+      if (s.includes("completed") || s.includes("已完成")) return "completed";
+      if (s.includes("pending payment") || s.includes("待支付")) return "pending_payment";
+      return "pending";
+    }
+
+    function rangesOverlap(startA, endA, startB, endB) {
+      return startA <= endB && startB <= endA;
+    }
+
+    function availableUnitsByRange(modelId, startDate, endDate) {
+      if (!modelId) return [];
+      const { models, units } = ensureFleetData();
+      const model = models.find((m) => String(m.modelId) === String(modelId));
+      if (!model || model.active === false) return [];
+
+      const modelUnits = units.filter((u) => String(u.modelId) === String(modelId) && u.active !== false);
+      if (!modelUnits.length) return [];
+
+      const orders = readOrders();
+      const overlapping = orders.filter((o) => {
+        const sKey = statusKey(o.status);
+        if (sKey === "rejected" || sKey === "completed") return false;
+        if (String(o.vehicleId || "") !== String(modelId)) return false;
+        if (!o.pickupDate || !o.returnDate) return false;
+        return rangesOverlap(startDate, endDate, o.pickupDate, o.returnDate);
+      });
+
+      const occupiedUnitIds = new Set(overlapping.filter((o) => o.unitId).map((o) => String(o.unitId)));
+      const legacyNoUnitCount = overlapping.filter((o) => !o.unitId).length;
+      const freeUnits = modelUnits.filter((u) => !occupiedUnitIds.has(String(u.unitId)));
+      if (freeUnits.length <= legacyNoUnitCount) return [];
+      return freeUnits.slice(legacyNoUnitCount);
+    }
+
+    function assignAvailableUnit(modelId, startDate, endDate, preferredColor) {
+      const available = availableUnitsByRange(modelId, startDate, endDate);
+      if (!available.length) return null;
+      if (!preferredColor) return available[0];
+      return available.find((u) => String(u.color || "").toLowerCase() === String(preferredColor || "").toLowerCase()) || null;
+    }
+
+    function calcDays() {
+      const pickupDate = document.getElementById("pickupDate").value;
+      const returnDate = document.getElementById("returnDate").value;
+      if (!pickupDate || !returnDate) return 1;
+      const d1 = new Date(pickupDate);
+      const d2 = new Date(returnDate);
+      return Math.max(1, Math.ceil((d2 - d1) / 86400000));
+    }
+
+    function updateSummary() {
+      const days = calcDays();
+      const rentalType = document.getElementById("rentalTypeSelect").value || "daily";
+      const unit = priceByRentalType(vehicleId, rentalType);
+      document.getElementById("days").textContent = String(days);
+      document.getElementById("dailyRate").textContent = fmt(unit);
+      document.getElementById("total").textContent = fmt(days * unit + 2000);
+    }
+
+    function renderColorOptions() {
+      const colorSelect = document.getElementById("colorSelect");
+      const startDate = document.getElementById("pickupDate").value;
+      const endDate = document.getElementById("returnDate").value;
+      const selected = colorSelect.value;
+      const available = availableUnitsByRange(vehicleId, startDate, endDate);
+      const uniq = [];
+      const seen = new Set();
+      available.forEach((u) => {
+        const c = String(u.color || "Unspecified").trim();
+        const key = c.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); uniq.push(c); }
+      });
+      colorSelect.innerHTML = uniq.map((c) => `<option value="${c}">${c}</option>`).join("");
+      if (!uniq.length) colorSelect.innerHTML = `<option value="">${t("noColors")}</option>`;
+      if (uniq.includes(selected)) colorSelect.value = selected;
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = !currentUser || !uniq.length;
+      submitBtn.classList.toggle("opacity-60", submitBtn.disabled);
+      submitBtn.classList.toggle("cursor-not-allowed", submitBtn.disabled);
+    }
+
+    function applyLang() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+      document.getElementById("go-back-btn").textContent = `← ${t("back")}`;
+      const settings = getSiteSettings();
+      const pickupSelect = document.getElementById("pickupSelect");
+      pickupSelect.innerHTML = settings.pickupLocations.map((p) => {
+        const label = lang === "zh-CN" ? (p.zh || p.en || p.key) : (p.en || p.zh || p.key);
+        return `<option value="${p.key}">${label}</option>`;
+      }).join("");
+      const rentalTypeSelect = document.getElementById("rentalTypeSelect");
+      rentalTypeSelect.innerHTML = `
+        <option value="daily">${lang === "zh-CN" ? "日租" : "Daily"}</option>
+        <option value="weekly">${lang === "zh-CN" ? "周租" : "Weekly"}</option>
+        <option value="monthly">${lang === "zh-CN" ? "月租" : "Monthly"}</option>
+        <option value="withDriver">${lang === "zh-CN" ? "带司机" : "With Driver"}</option>
+      `;
+      document.getElementById("purposeSelect").innerHTML = `<option value="business">${t("business")}</option><option value="travel">${t("travel")}</option><option value="family">${t("family")}</option>`;
+      document.getElementById("paymentSelect").innerHTML = `
+        <option value="online_card">${t("payOnlineCard")}</option>
+        <option value="online_debit">${t("payOnlineDebit")}</option>
+        <option value="online_gcash">${t("payOnlineGcash")}</option>
+        <option value="online_maya">${t("payOnlineMaya")}</option>
+        <option value="offline_cash">${t("payOfflineCash")}</option>
+        <option value="offline_counter">${t("payOfflineCounter")}</option>`;
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        const active = btn.dataset.lang === lang;
+        btn.classList.toggle("bg-white", active);
+        btn.classList.toggle("text-[#0A2463]", active);
+      });
+      updatePickupAddressUI();
+    }
+
+    document.querySelectorAll(".lang-btn").forEach(btn => btn.addEventListener("click", () => {
+      localStorage.setItem(STORAGE_LANG, btn.dataset.lang);
+      saveDraft();
+      location.reload();
+    }));
+
+    document.getElementById("go-back-btn").addEventListener("click", () => {
+      saveDraft();
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "client-home.html#cars";
+    });
+
+    const { models } = ensureFleetData();
+    const modelLookup = models.find((m) => String(m.modelId) === String(vehicleId));
+    if (modelLookup) {
+      if (!params.get("carName")) carName = modelLookup.name;
+      if (!params.get("rate")) rate = Number(modelLookup.dailyRate || rate || 0);
+    }
+
+    const today = new Date();
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+    const pickupInput = document.getElementById("pickupDate");
+    const returnInput = document.getElementById("returnDate");
+    const pickupSelectEl = document.getElementById("pickupSelect");
+    pickupInput.min = toDate(today);
+    returnInput.min = toDate(tomorrow);
+
+    applyLang();
+
+    const draft = loadDraft();
+    const qPickupDate = params.get("pickupDate") || "";
+    const qReturnDate = params.get("returnDate") || "";
+    const qPickup = params.get("pickup") || "";
+    const qRentalType = params.get("rentalType") || "";
+
+    const initialPickup = draft?.pickupDate || (qPickupDate && qPickupDate >= toDate(today) ? qPickupDate : toDate(today));
+    const minReturn = (() => { const d = new Date(initialPickup); d.setDate(d.getDate() + 1); return toDate(d); })();
+    const initialReturn = draft?.returnDate || (qReturnDate && qReturnDate >= minReturn ? qReturnDate : minReturn);
+
+    pickupInput.value = initialPickup;
+    returnInput.min = minReturn;
+    returnInput.value = initialReturn;
+    document.getElementById("pickupTime").value = draft?.pickupTime || "10:00";
+    document.getElementById("returnTime").value = draft?.returnTime || "10:00";
+
+    if (currentUser) {
+      if (!draft?.name) document.getElementById("name").value = currentUser.name || "";
+      if (!draft?.phone) document.getElementById("phone").value = currentUser.phone || "";
+      if (!draft?.email) document.getElementById("email").value = currentUser.email || "";
+    } else {
+      const tip = document.getElementById("login-tip");
+      tip.classList.remove("hidden");
+      tip.innerHTML = `${t("loginFirst")} <a class="underline" href="client-login.html?redirect=${encodeURIComponent(window.location.pathname.split('/').pop() + window.location.search)}">${t("goLogin")}</a>`;
+    }
+
+    if (draft) {
+      const form = document.getElementById("booking-form");
+      Object.keys(draft).forEach((k) => {
+        const el = form.elements[k];
+        if (el && typeof draft[k] === "string") el.value = draft[k];
+      });
+    } else {
+      if (qPickup) document.getElementById("pickupSelect").value = qPickup;
+      if (qRentalType) document.getElementById("rentalTypeSelect").value = qRentalType;
+    }
+
+    document.getElementById("carName").textContent = carName;
+    document.getElementById("packageName").textContent = packageMap[packageType] || "-";
+    document.getElementById("dailyRate").textContent = fmt(rate);
+
+    pickupInput.addEventListener("change", () => {
+      const start = new Date(pickupInput.value);
+      start.setDate(start.getDate() + 1);
+      returnInput.min = toDate(start);
+      if (new Date(returnInput.value) < start) returnInput.value = toDate(start);
+      updateSummary();
+      renderColorOptions();
+      saveDraft();
+    });
+
+    returnInput.addEventListener("change", () => {
+      updateSummary();
+      renderColorOptions();
+      saveDraft();
+    });
+
+    function updatePickupAddressUI() {
+      const settings = getSiteSettings();
+      const value = pickupSelectEl.value;
+      const rowId = "pickup-address-row";
+      const formGrid = document.querySelector("#booking-form .grid");
+      let row = document.getElementById(rowId);
+      if (!row) {
+        row = document.createElement("div");
+        row.id = rowId;
+        row.className = "md:col-span-2";
+        row.innerHTML = `
+          <label class="block text-sm mb-1" id="pickup-address-label"></label>
+          <input id="pickup-address-input" name="pickupAddress" class="w-full border rounded-md px-3 py-2" />
+        `;
+        formGrid.appendChild(row);
+      }
+      const selected = settings.pickupLocations.find((p) => String(p.key) === String(value));
+      const input = document.getElementById("pickup-address-input");
+      const label = document.getElementById("pickup-address-label");
+      const isDelivery = value === "delivery";
+      label.textContent = isDelivery ? t("deliveryAddress") : t("pickupAddress");
+      input.required = isDelivery;
+      if (isDelivery) {
+        input.placeholder = lang === "zh-CN" ? "请输入送车地址" : "Enter delivery address";
+      } else {
+        input.placeholder = "";
+        input.value = selected?.address || "";
+      }
+      if (!isDelivery && selected?.address) input.readOnly = true; else input.readOnly = false;
+    }
+
+    pickupSelectEl.addEventListener("change", () => {
+      updatePickupAddressUI();
+      saveDraft();
+    });
+    document.getElementById("rentalTypeSelect").addEventListener("change", () => {
+      updateSummary();
+      saveDraft();
+    });
+
+    document.getElementById("booking-form").addEventListener("input", saveDraft);
+    document.getElementById("booking-form").addEventListener("change", saveDraft);
+
+    function paymentMeta(paymentCode) {
+      if (paymentCode === "online_card") return { mode: "online", method: "Credit Card", channel: "QR Online" };
+      if (paymentCode === "online_debit") return { mode: "online", method: "Debit Card", channel: "QR Online" };
+      if (paymentCode === "online_gcash") return { mode: "online", method: "GCash", channel: "QR Online" };
+      if (paymentCode === "online_maya") return { mode: "online", method: "Maya", channel: "QR Online" };
+      if (paymentCode === "offline_cash") return { mode: "offline", method: "Cash", channel: "Counter" };
+      return { mode: "offline", method: "Counter", channel: "In Person" };
+    }
+
+    document.getElementById("booking-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      if (!window.confirm(t("confirmSubmit"))) return;
+
+      const fd = new FormData(e.target);
+      const days = calcDays();
+      const rentalType = String(fd.get("rentalType") || "daily");
+      const unitRate = priceByRentalType(vehicleId, rentalType);
+      const total = days * unitRate + 2000;
+      const now = new Date();
+      const orderId = `AR${now.getFullYear()}${String(now.getMonth()+1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}${String(now.getTime()).slice(-6)}`;
+      const startDate = String(fd.get("pickupDate") || "");
+      const endDate = String(fd.get("returnDate") || "");
+      const chosenColor = String(fd.get("color") || "");
+      const assignedUnit = assignAvailableUnit(vehicleId, startDate, endDate, chosenColor);
+      if (!assignedUnit) {
+        alert(t("soldOut"));
+        return;
+      }
+
+      const payCode = String(fd.get("payment") || "");
+      const pay = paymentMeta(payCode);
+      const online = pay.mode === "online";
+
+      const order = {
+        orderId,
+        userId: currentUser.id,
+        userName: String(fd.get("name")||""),
+        phone: String(fd.get("phone")||""),
+        email: String(fd.get("email")||""),
+        idNo: String(fd.get("idNo")||""),
+        licenseNo: String(fd.get("licenseNo")||""),
+        vehicleId,
+        unitId: assignedUnit.unitId,
+        unitColor: assignedUnit.color || chosenColor,
+        carName,
+        packageType,
+        packageName: packageMap[packageType] || "",
+        rentalType,
+        rentalTypeLabel: (() => {
+          if (rentalType === "weekly") return lang === "zh-CN" ? "周租" : "Weekly";
+          if (rentalType === "monthly") return lang === "zh-CN" ? "月租" : "Monthly";
+          if (rentalType === "withDriver") return lang === "zh-CN" ? "带司机" : "With Driver";
+          return lang === "zh-CN" ? "日租" : "Daily";
+        })(),
+        baseDailyRate: rate,
+        dailyRate: unitRate,
+        deposit: 2000,
+        days,
+        total,
+        pickup: String(fd.get("pickup")||""),
+        pickupAddress: String(fd.get("pickupAddress") || ""),
+        pickupDate: String(fd.get("pickupDate")||""),
+        pickupTime: String(fd.get("pickupTime")||""),
+        returnDate: String(fd.get("returnDate")||""),
+        returnTime: String(fd.get("returnTime")||""),
+        purpose: String(fd.get("purpose")||""),
+        payment: payCode,
+        paymentMethod: pay.method,
+        paymentChannel: pay.channel,
+        note: String(fd.get("note")||""),
+        status: online ? (lang === "zh-CN" ? "待支付" : "Pending Payment") : t("pending"),
+        orderDate: now.toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
+      };
+
+      const orders = readOrders();
+      orders.push(order);
+      saveOrders(orders);
+
+      if (online) {
+        window.location.href = `client-payment.html?orderId=${encodeURIComponent(orderId)}`;
+        return;
+      }
+
+      clearDraft();
+      window.location.href = `client-confirmation.html?orderId=${encodeURIComponent(orderId)}`;
+    });
+
+    updateSummary();
+    renderColorOptions();
+    updatePickupAddressUI();
+    saveDraft();
+  </script>
+</body>
+</html>

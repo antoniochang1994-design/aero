@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-500 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 bg-white rounded-2xl overflow-hidden shadow-2xl">
+    <section class="p-8">
+      <div class="flex items-center justify-between mb-4">
+        <h1 id="title" class="text-3xl font-bold text-[#0A2463]"></h1>
+        <div class="flex border rounded overflow-hidden text-sm">
+          <button class="lang-btn px-2 py-1" data-lang="zh-CN">中文</button>
+          <button class="lang-btn px-2 py-1" data-lang="en-US">EN</button>
+        </div>
+      </div>
+      <p id="subtitle" class="text-gray-600 mb-6"></p>
+
+      <div id="logged-user" class="hidden mb-4 p-3 bg-green-100 text-green-900 rounded-md text-sm"></div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label id="loginAccountLabel" class="block text-sm mb-1"></label>
+          <input id="login-account" required class="w-full border rounded-md px-3 py-2" />
+        </div>
+        <div>
+          <label id="loginPasswordLabel" class="block text-sm mb-1"></label>
+          <input id="login-password" required type="password" class="w-full border rounded-md px-3 py-2" />
+        </div>
+        <button id="loginBtn" class="w-full bg-[#0A2463] text-white py-3 rounded-md font-medium hover:bg-[#123884]"></button>
+      </form>
+
+      <button id="show-register" class="mt-4 text-sm text-[#0A2463] hover:underline"></button>
+      <div class="mt-4 text-sm"><a id="backHome" href="client-home.html" class="text-gray-500 hover:underline"></a></div>
+    </section>
+
+    <section class="bg-gray-50 p-8" id="register-panel">
+      <h2 id="registerTitle" class="text-2xl font-bold text-[#0A2463] mb-2"></h2>
+      <p id="registerSubtitle" class="text-gray-600 mb-4"></p>
+      <form id="register-form" class="space-y-3">
+        <input id="register-name" required class="w-full border rounded-md px-3 py-2" />
+        <input id="register-phone" required class="w-full border rounded-md px-3 py-2" />
+        <input id="register-email" required type="email" class="w-full border rounded-md px-3 py-2" />
+        <input id="register-password" required type="password" class="w-full border rounded-md px-3 py-2" />
+        <button id="registerBtn" class="w-full bg-[#3E92CC] text-white py-2 rounded-md hover:bg-[#3178a8]"></button>
+      </form>
+    </section>
+  </div>
+
+  <div id="toast" class="fixed bottom-6 right-6 bg-black text-white px-4 py-2 rounded-md hidden"></div>
+
+  <script>
+    const STORAGE_USERS = "aeroUsers";
+    const STORAGE_CURRENT_USER = "aeroCurrentUser";
+    const STORAGE_LANG = "aeroLang";
+
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect") || "client-home.html";
+
+    const I18N = {
+      "zh-CN": {
+        title: "欢迎回来", subtitle: "登录后可查看订单、下载合同和发票。",
+        account: "手机号 / 邮箱", password: "密码", loginBtn: "登录", showRegister: "没有账号？立即注册", backHome: "返回首页",
+        registerTitle: "快速注册", registerSubtitle: "1 分钟注册，首次预订享受新人优惠。", registerBtn: "注册并登录",
+        pName: "姓名", pPhone: "手机号", pEmail: "邮箱", pPwd: "设置密码",
+        loginFail: "账号或密码错误，请重试", loginOk: "登录成功，正在跳转...", exists: "手机号或邮箱已注册，请直接登录", registerOk: "注册成功，正在跳转...",
+        already: "当前已登录："
+      },
+      "en-US": {
+        title: "Welcome Back", subtitle: "Sign in to view orders, contracts and invoices.",
+        account: "Phone / Email", password: "Password", loginBtn: "Login", showRegister: "No account? Register now", backHome: "Back to home",
+        registerTitle: "Quick Register", registerSubtitle: "Register in 1 minute and get a new-customer offer.", registerBtn: "Register & Login",
+        pName: "Name", pPhone: "Phone", pEmail: "Email", pPwd: "Set password",
+        loginFail: "Wrong account or password", loginOk: "Login successful, redirecting...", exists: "Phone or email already exists", registerOk: "Register successful, redirecting...",
+        already: "Currently signed in: "
+      }
+    };
+
+    let lang = localStorage.getItem(STORAGE_LANG) || "zh-CN";
+
+    function t(k) { return I18N[lang][k] || k; }
+    function showToast(msg){
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 2200);
+    }
+    function readUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_USERS) || "[]"); } catch (_) { return []; } }
+    function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
+    function saveCurrentUser(user) { localStorage.setItem(STORAGE_CURRENT_USER, JSON.stringify(user)); }
+
+    function applyLang() {
+      document.documentElement.lang = lang;
+      document.getElementById("title").textContent = t("title");
+      document.getElementById("subtitle").textContent = t("subtitle");
+      document.getElementById("loginAccountLabel").textContent = t("account");
+      document.getElementById("loginPasswordLabel").textContent = t("password");
+      document.getElementById("loginBtn").textContent = t("loginBtn");
+      document.getElementById("show-register").textContent = t("showRegister");
+      document.getElementById("backHome").textContent = t("backHome");
+      document.getElementById("registerTitle").textContent = t("registerTitle");
+      document.getElementById("registerSubtitle").textContent = t("registerSubtitle");
+      document.getElementById("registerBtn").textContent = t("registerBtn");
+      document.getElementById("register-name").placeholder = t("pName");
+      document.getElementById("register-phone").placeholder = t("pPhone");
+      document.getElementById("register-email").placeholder = t("pEmail");
+      document.getElementById("register-password").placeholder = t("pPwd");
+
+      const current = JSON.parse(localStorage.getItem(STORAGE_CURRENT_USER) || "null");
+      const loggedUser = document.getElementById("logged-user");
+      if (current) {
+        loggedUser.classList.remove("hidden");
+        loggedUser.textContent = `${t("already")}${current.name || current.phone || current.email}`;
+      } else {
+        loggedUser.classList.add("hidden");
+      }
+
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        const active = btn.dataset.lang === lang;
+        btn.classList.toggle("bg-[#0A2463]", active);
+        btn.classList.toggle("text-white", active);
+      });
+    }
+
+    document.querySelectorAll(".lang-btn").forEach(btn => btn.addEventListener("click", () => {
+      lang = btn.dataset.lang;
+      localStorage.setItem(STORAGE_LANG, lang);
+      applyLang();
+    }));
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const account = document.getElementById("login-account").value.trim();
+      const password = document.getElementById("login-password").value;
+      const users = readUsers();
+      const user = users.find((u) => (u.phone === account || u.email === account) && u.password === password);
+      if (!user) return showToast(t("loginFail"));
+      saveCurrentUser({ id: user.id, name: user.name, phone: user.phone, email: user.email });
+      showToast(t("loginOk"));
+      setTimeout(() => { window.location.href = redirect; }, 700);
+    });
+
+    document.getElementById("register-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("register-name").value.trim();
+      const phone = document.getElementById("register-phone").value.trim();
+      const email = document.getElementById("register-email").value.trim().toLowerCase();
+      const password = document.getElementById("register-password").value;
+      const users = readUsers();
+      if (users.some((u) => u.phone === phone || u.email === email)) return showToast(t("exists"));
+      const user = { id: `U${Date.now()}`, name, phone, email, password, createdAt: new Date().toISOString() };
+      users.push(user);
+      saveUsers(users);
+      saveCurrentUser({ id: user.id, name: user.name, phone: user.phone, email: user.email });
+      showToast(t("registerOk"));
+      setTimeout(() => { window.location.href = redirect; }, 700);
+    });
+
+    document.getElementById("show-register").addEventListener("click", () => {
+      document.getElementById("register-panel").scrollIntoView({ behavior: "smooth" });
+    });
+
+    applyLang();
+  </script>
+</body>
+</html>

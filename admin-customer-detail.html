@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Detail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Customer Detail</h1>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="admin-customers.html" class="hover:underline">Back to Customer List</a>
+        <a href="admin-home.html" class="hover:underline">Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <section class="bg-white rounded-lg shadow p-6">
+      <div id="profile" class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm"></div>
+    </section>
+
+    <section class="bg-white rounded-lg shadow overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Order ID</th>
+            <th class="p-3 text-left">Unit ID</th>
+            <th class="p-3 text-left">Vehicle</th>
+            <th class="p-3 text-left">Date Range</th>
+            <th class="p-3 text-left">Status</th>
+            <th class="p-3 text-left">Total</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const STORAGE_USERS = "aeroUsers";
+    const STORAGE_ORDERS = "aeroOrders";
+
+    const auth = (() => { try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; } })();
+    if (!auth || auth.role !== "admin") window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-customer-detail.html" + window.location.search)}`;
+
+    const id = new URLSearchParams(window.location.search).get("id") || "";
+    function readUsers(){ try { return JSON.parse(localStorage.getItem(STORAGE_USERS) || "[]"); } catch (_) { return []; } }
+    function readOrders(){ try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function fmt(n){ return `₱${Number(n || 0).toLocaleString("en-US")}`; }
+
+    const users = readUsers();
+    const orders = readOrders();
+    const user = users.find((u) => u.id === id) || {};
+
+    const matchedOrders = orders.filter((o) => (o.userId || "") === id || (!(o.userId) && (o.phone === user.phone || o.email === user.email)));
+
+    const profile = document.getElementById("profile");
+    const profileRows = [
+      ["Customer ID", id || "-"],
+      ["Name", user.name || matchedOrders[0]?.userName || "-"],
+      ["Phone", user.phone || matchedOrders[0]?.phone || "-"],
+      ["Email", user.email || matchedOrders[0]?.email || "-"],
+      ["Orders", String(matchedOrders.length)],
+      ["Registered At", user.createdAt ? new Date(user.createdAt).toLocaleString() : "-"]
+    ];
+    profile.innerHTML = profileRows.map(([k,v]) => `<div class="p-3 bg-gray-50 rounded"><div class="text-gray-500 mb-1">${k}</div><div class="font-medium break-all">${v}</div></div>`).join("");
+
+    const tbody = document.getElementById("orders-tbody");
+    matchedOrders.forEach((o) => {
+      const tr = document.createElement("tr");
+      tr.className = "border-t";
+      tr.innerHTML = `
+        <td class="p-3 font-mono">${o.orderId || "-"}</td>
+        <td class="p-3 font-mono">${o.unitId || "-"}</td>
+        <td class="p-3">${o.carName || "-"}</td>
+        <td class="p-3">${o.pickupDate || "-"} ${o.pickupTime || ""} ~ ${o.returnDate || "-"} ${o.returnTime || ""}</td>
+        <td class="p-3">${o.status || "-"}</td>
+        <td class="p-3">${fmt(o.total)}</td>`;
+      tbody.appendChild(tr);
+    });
+    if (!tbody.children.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="p-4 text-gray-500" colspan="6">No orders for this customer</td>`;
+      tbody.appendChild(tr);
+    }
+  </script>
+</body>
+</html>

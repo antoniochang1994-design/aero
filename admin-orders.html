@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Admin Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Admin Order Center</h1>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="admin-home.html" class="hover:underline">Back to Dashboard</a>
+        <button id="admin-logout" class="border border-white/50 px-3 py-1 rounded">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap gap-3 items-center">
+      <label class="text-sm">Filter Status</label>
+      <select id="status-filter" class="border rounded px-3 py-2 text-sm">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="pending_payment">Pending Payment</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="rejected">Rejected</option>
+        <option value="completed">Completed</option>
+      </select>
+      <button id="refresh-btn" class="text-sm px-4 py-2 border rounded-md hover:bg-gray-50">Refresh</button>
+      <button id="export-btn" class="text-sm px-4 py-2 border rounded-md hover:bg-gray-50">Export Excel (CSV)</button>
+    </div>
+
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Order ID</th>
+            <th class="p-3 text-left">Customer</th>
+            <th class="p-3 text-left">Vehicle / Unit</th>
+            <th class="p-3 text-left">Order Date</th>
+            <th class="p-3 text-left">Pickup</th>
+            <th class="p-3 text-left">Return</th>
+            <th class="p-3 text-left">Amount</th>
+            <th class="p-3 text-left">Status</th>
+            <th class="p-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <div id="detail-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-5xl max-h-[92vh] overflow-y-auto">
+      <div class="p-6 space-y-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-[#0A2463]">Order Details</h2>
+          <button id="detail-close" class="px-3 py-1 border rounded">Close</button>
+        </div>
+
+        <div id="detail-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm"></div>
+
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="font-semibold mb-3">Admin Update</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+            <div>
+              <label class="block text-gray-600 mb-1">Status</label>
+              <select id="edit-status" class="w-full border rounded px-2 py-2">
+                <option value="pending">Pending</option>
+                <option value="pending_payment">Pending Payment</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="rejected">Rejected</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-600 mb-1">Payment Method</label>
+              <input id="edit-payment-method" class="w-full border rounded px-2 py-2" placeholder="Card / Cash / Transfer" />
+            </div>
+            <div>
+              <label class="block text-gray-600 mb-1">Payment Channel</label>
+              <input id="edit-payment-channel" class="w-full border rounded px-2 py-2" placeholder="Counter / Online / QR" />
+            </div>
+            <div>
+              <label class="block text-gray-600 mb-1">Payment Date</label>
+              <input id="edit-payment-date" type="date" class="w-full border rounded px-2 py-2" />
+            </div>
+            <div>
+              <label class="block text-gray-600 mb-1">Completed Date</label>
+              <input id="edit-completed-date" type="date" class="w-full border rounded px-2 py-2" />
+            </div>
+            <div>
+              <label class="block text-gray-600 mb-1">Channel Ref</label>
+              <input id="edit-payment-ref" class="w-full border rounded px-2 py-2" placeholder="Txn/Ref No" />
+            </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-gray-600 mb-1">Admin Note</label>
+              <textarea id="edit-admin-note" rows="3" class="w-full border rounded px-2 py-2"></textarea>
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button id="save-meta-btn" class="px-4 py-2 bg-[#0A2463] text-white rounded">Save Update</button>
+            <button id="set-paid-btn" class="px-4 py-2 border rounded">Set Paid Today</button>
+            <button id="set-confirmed-btn" class="px-4 py-2 border rounded">Set Confirmed</button>
+            <button id="set-rejected-btn" class="px-4 py-2 border rounded">Set Rejected</button>
+            <button id="set-completed-btn" class="px-4 py-2 border rounded">Set Completed</button>
+          </div>
+          <div id="save-tip" class="text-sm text-green-700 mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+
+    const auth = (() => {
+      try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; }
+    })();
+
+    if (!auth || auth.role !== "admin") {
+      window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-orders.html")}`;
+    }
+
+    function readOrders(){ try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function saveOrders(orders){ localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders)); }
+    function fmt(n){ return `₱${Number(n).toLocaleString("en-US")}`; }
+
+    function statusKey(status) {
+      const s = String(status || "").toLowerCase();
+      if (s.includes("pending payment") || s.includes("待支付")) return "pending_payment";
+      if (s.includes("pending") || s.includes("待确认")) return "pending";
+      if (s.includes("confirmed") || s.includes("已确认")) return "confirmed";
+      if (s.includes("rejected") || s.includes("已拒绝")) return "rejected";
+      if (s.includes("completed") || s.includes("已完成")) return "completed";
+      return "pending";
+    }
+
+    function statusLabel(key) {
+      if (key === "pending_payment") return "Pending Payment";
+      if (key === "confirmed") return "Confirmed";
+      if (key === "rejected") return "Rejected";
+      if (key === "completed") return "Completed";
+      return "Pending";
+    }
+
+    function normalizeOrder(order) {
+      const o = { ...order };
+      o.status = statusLabel(statusKey(o.status));
+      if (!o.orderDate) o.orderDate = o.createdAt || "";
+      if (!o.paymentMethod) o.paymentMethod = o.payment || "";
+      if (!o.paymentChannel) o.paymentChannel = "";
+      if (!o.paymentDate) o.paymentDate = "";
+      if (!o.paymentRef) o.paymentRef = "";
+      if (!o.completedAt) o.completedAt = "";
+      if (!o.adminNote) o.adminNote = "";
+      return o;
+    }
+
+    function normalizeAllOrders() {
+      const orders = readOrders().map(normalizeOrder);
+      saveOrders(orders);
+      return orders;
+    }
+
+    function fmtDateTime(v) {
+      if (!v) return "-";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return String(v);
+      return d.toLocaleString();
+    }
+
+    function field(label, value) {
+      return `<div class="p-3 bg-gray-50 rounded"><div class="text-gray-500 mb-1">${label}</div><div class="font-medium break-all">${value || "-"}</div></div>`;
+    }
+
+    let currentOrderId = "";
+
+    function openDetail(order) {
+      const o = normalizeOrder(order);
+      const detail = document.getElementById("detail-content");
+      detail.innerHTML = [
+        field("Order ID", o.orderId),
+        field("Status", o.status),
+        field("Order Date", fmtDateTime(o.orderDate || o.createdAt)),
+        field("Pickup Date", `${o.pickupDate || "-"} ${o.pickupTime || ""}`.trim()),
+        field("Return Date", `${o.returnDate || "-"} ${o.returnTime || ""}`.trim()),
+        field("Completed Date", fmtDateTime(o.completedAt)),
+        field("Payment Date", fmtDateTime(o.paymentDate)),
+        field("Payment Method", o.paymentMethod || "-"),
+        field("Payment Channel", o.paymentChannel || "-"),
+        field("Payment Ref", o.paymentRef || "-"),
+        field("Amount", fmt(o.total || 0)),
+        field("Daily Rate", fmt(o.dailyRate || 0)),
+        field("Customer", o.userName),
+        field("Phone", o.phone),
+        field("Email", o.email),
+        field("Vehicle", o.carName),
+        field("Unit ID", o.unitId || "-"),
+        field("Unit Color", o.unitColor || "-")
+      ].join("");
+
+      currentOrderId = o.orderId;
+      document.getElementById("edit-status").value = statusKey(o.status);
+      document.getElementById("edit-payment-method").value = o.paymentMethod || "";
+      document.getElementById("edit-payment-channel").value = o.paymentChannel || "";
+      document.getElementById("edit-payment-date").value = o.paymentDate ? String(o.paymentDate).slice(0, 10) : "";
+      document.getElementById("edit-completed-date").value = o.completedAt ? String(o.completedAt).slice(0, 10) : "";
+      document.getElementById("edit-payment-ref").value = o.paymentRef || "";
+      document.getElementById("edit-admin-note").value = o.adminNote || "";
+      document.getElementById("save-tip").textContent = "";
+
+      const modal = document.getElementById("detail-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeDetail() {
+      const modal = document.getElementById("detail-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      currentOrderId = "";
+    }
+
+    function updateOrder(orderId, patch) {
+      const orders = normalizeAllOrders();
+      const idx = orders.findIndex((o) => o.orderId === orderId);
+      if (idx < 0) return;
+      const next = { ...orders[idx], ...patch, updatedAt: new Date().toISOString() };
+      orders[idx] = next;
+      saveOrders(orders);
+      render();
+      const fresh = orders.find((o) => o.orderId === orderId);
+      if (fresh) openDetail(fresh);
+      document.getElementById("save-tip").textContent = "Updated.";
+      setTimeout(() => { document.getElementById("save-tip").textContent = ""; }, 1200);
+    }
+
+    function setStatus(orderId, key) {
+      const patch = { status: statusLabel(key) };
+      const nowIso = new Date().toISOString();
+      if (key === "confirmed") patch.confirmedAt = nowIso;
+      if (key === "completed") patch.completedAt = nowIso;
+      updateOrder(orderId, patch);
+    }
+
+    function exportCsv(rows, filename) {
+      const csv = rows.map((r) => r.map((v) => {
+        const s = String(v == null ? "" : v);
+        if (s.includes(",") || s.includes("\n") || s.includes('"')) return `"${s.replace(/"/g, '""')}"`;
+        return s;
+      }).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function currentFilteredOrders() {
+      const statusFilter = document.getElementById("status-filter").value;
+      return normalizeAllOrders()
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .filter((o) => statusFilter === "all" || statusKey(o.status) === statusFilter);
+    }
+
+    function exportOrders() {
+      const list = currentFilteredOrders();
+      const rows = [[
+        "Order ID", "Status", "Order Date", "Pickup Date", "Return Date", "Completed Date",
+        "Payment Date", "Payment Method", "Payment Channel", "Payment Ref", "Amount", "Daily Rate",
+        "Days", "Customer", "Phone", "Email", "Vehicle", "Unit ID", "Unit Color", "Created At", "Updated At"
+      ]];
+
+      list.forEach((o) => {
+        rows.push([
+          o.orderId || "",
+          o.status || "",
+          o.orderDate || o.createdAt || "",
+          `${o.pickupDate || ""} ${o.pickupTime || ""}`.trim(),
+          `${o.returnDate || ""} ${o.returnTime || ""}`.trim(),
+          o.completedAt || "",
+          o.paymentDate || "",
+          o.paymentMethod || o.payment || "",
+          o.paymentChannel || "",
+          o.paymentRef || "",
+          Number(o.total || 0),
+          Number(o.dailyRate || 0),
+          Number(o.days || 0),
+          o.userName || "",
+          o.phone || "",
+          o.email || "",
+          o.carName || "",
+          o.unitId || "",
+          o.unitColor || "",
+          o.createdAt || "",
+          o.updatedAt || ""
+        ]);
+      });
+
+      const ts = new Date();
+      const name = `orders_${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}.csv`;
+      exportCsv(rows, name);
+    }
+
+    function render() {
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      const filtered = currentFilteredOrders();
+
+      if (!filtered.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="p-4 text-gray-500" colspan="9">No orders</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      filtered.forEach((order) => {
+        const tr = document.createElement("tr");
+        tr.className = "border-t";
+        tr.innerHTML = `
+          <td class="p-3 font-mono">${order.orderId || "-"}</td>
+          <td class="p-3">${order.userName || "-"}<div class="text-xs text-gray-500">${order.phone || "-"}</div></td>
+          <td class="p-3">${order.carName || "-"}<div class="text-xs text-gray-500">${order.unitId || "-"}</div></td>
+          <td class="p-3">${fmtDateTime(order.orderDate || order.createdAt)}</td>
+          <td class="p-3">${order.pickupDate || "-"} ${order.pickupTime || ""}</td>
+          <td class="p-3">${order.returnDate || "-"} ${order.returnTime || ""}</td>
+          <td class="p-3">${fmt(order.total || 0)}</td>
+          <td class="p-3">${order.status || "-"}</td>
+          <td class="p-3 space-x-2">
+            <button class="px-2 py-1 border rounded" data-act="view">View</button>
+            <button class="px-2 py-1 border rounded" data-act="confirm">Confirm</button>
+            <button class="px-2 py-1 border rounded" data-act="reject">Reject</button>
+            <button class="px-2 py-1 border rounded" data-act="done">Complete</button>
+          </td>`;
+
+        tr.querySelector('[data-act="view"]').addEventListener("click", () => openDetail(order));
+        tr.querySelector('[data-act="confirm"]').addEventListener("click", () => setStatus(order.orderId, "confirmed"));
+        tr.querySelector('[data-act="reject"]').addEventListener("click", () => setStatus(order.orderId, "rejected"));
+        tr.querySelector('[data-act="done"]').addEventListener("click", () => setStatus(order.orderId, "completed"));
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("refresh-btn").addEventListener("click", render);
+    document.getElementById("status-filter").addEventListener("change", render);
+    document.getElementById("export-btn").addEventListener("click", exportOrders);
+    document.getElementById("detail-close").addEventListener("click", closeDetail);
+    document.getElementById("detail-modal").addEventListener("click", (e) => {
+      if (e.target.id === "detail-modal") closeDetail();
+    });
+
+    document.getElementById("save-meta-btn").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      const status = document.getElementById("edit-status").value;
+      const paymentMethod = document.getElementById("edit-payment-method").value.trim();
+      const paymentChannel = document.getElementById("edit-payment-channel").value.trim();
+      const paymentDate = document.getElementById("edit-payment-date").value;
+      const completedDate = document.getElementById("edit-completed-date").value;
+      const paymentRef = document.getElementById("edit-payment-ref").value.trim();
+      const adminNote = document.getElementById("edit-admin-note").value.trim();
+      updateOrder(currentOrderId, {
+        status: statusLabel(status),
+        paymentMethod,
+        paymentChannel,
+        paymentDate: paymentDate ? `${paymentDate}T00:00:00.000Z` : "",
+        completedAt: completedDate ? `${completedDate}T00:00:00.000Z` : "",
+        paymentRef,
+        adminNote
+      });
+    });
+
+    document.getElementById("set-paid-btn").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      updateOrder(currentOrderId, { paymentDate: new Date().toISOString() });
+    });
+
+    document.getElementById("set-confirmed-btn").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      setStatus(currentOrderId, "confirmed");
+    });
+
+    document.getElementById("set-rejected-btn").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      setStatus(currentOrderId, "rejected");
+    });
+
+    document.getElementById("set-completed-btn").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      setStatus(currentOrderId, "completed");
+    });
+
+    document.getElementById("admin-logout").addEventListener("click", () => {
+      sessionStorage.removeItem(STORAGE_ADMIN_AUTH);
+      window.location.href = "admin-auth.html";
+    });
+
+    normalizeAllOrders();
+    render();
+  </script>
+</body>
+</html>

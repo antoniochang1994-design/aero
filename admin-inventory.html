@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Inventory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Vehicle Inventory</h1>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="admin-home.html" class="hover:underline">Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-4">
+    <div class="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-end">
+      <div>
+        <label class="block text-sm mb-1">From</label>
+        <input id="range-start" type="date" class="border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">To</label>
+        <input id="range-end" type="date" class="border rounded px-3 py-2" />
+      </div>
+      <button id="check-btn" class="px-4 py-2 border rounded">Check Range</button>
+      <button id="add-model-btn" class="px-4 py-2 border rounded">Add New Model</button>
+      <button id="save-btn" class="px-4 py-2 bg-[#0A2463] text-white rounded">Save All Changes</button>
+      <button id="download-model-template-btn" class="px-4 py-2 border rounded">Model Template</button>
+      <button id="download-unit-template-btn" class="px-4 py-2 border rounded">Unit Template</button>
+      <label class="px-4 py-2 border rounded cursor-pointer">
+        Import Models CSV
+        <input id="import-model-input" type="file" accept=".csv,text/csv" class="hidden" />
+      </label>
+      <label class="px-4 py-2 border rounded cursor-pointer">
+        Import Units CSV
+        <input id="import-unit-input" type="file" accept=".csv,text/csv" class="hidden" />
+      </label>
+      <span id="save-msg" class="text-sm text-green-700"></span>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Expand</th>
+            <th class="p-3 text-left">Model ID</th>
+            <th class="p-3 text-left">Name</th>
+            <th class="p-3 text-left">Brand</th>
+            <th class="p-3 text-left">Type</th>
+            <th class="p-3 text-left">Seats</th>
+            <th class="p-3 text-left">Fuel</th>
+            <th class="p-3 text-left">Transmission</th>
+            <th class="p-3 text-left">Luggage</th>
+            <th class="p-3 text-left">Daily Rate</th>
+            <th class="p-3 text-left">Image URL</th>
+            <th class="p-3 text-left">Description</th>
+            <th class="p-3 text-left">Units</th>
+            <th class="p-3 text-left">Booked</th>
+            <th class="p-3 text-left">Available</th>
+            <th class="p-3 text-left">Active</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <template id="unit-panel-template">
+    <div class="p-4 bg-gray-50 border-t space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Vehicle Units</h3>
+        <button class="add-unit-btn px-3 py-1 border rounded text-xs">Add Unit</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs bg-white rounded border">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="p-2 text-left">Unit ID</th>
+              <th class="p-2 text-left">Name</th>
+              <th class="p-2 text-left">Color</th>
+              <th class="p-2 text-left">Fuel</th>
+              <th class="p-2 text-left">Transmission</th>
+              <th class="p-2 text-left">Seats</th>
+              <th class="p-2 text-left">Plate</th>
+              <th class="p-2 text-left">Mileage</th>
+              <th class="p-2 text-left">Range Status</th>
+              <th class="p-2 text-left">Booking Ranges</th>
+              <th class="p-2 text-left">Active</th>
+            </tr>
+          </thead>
+          <tbody class="unit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_FLEET_MODELS = "aeroFleetModels";
+    const STORAGE_FLEET_UNITS = "aeroFleetUnits";
+
+    const auth = (() => { try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; } })();
+    if (!auth || auth.role !== "admin") window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-inventory.html")}`;
+
+    function readOrders(){ try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function readModels(){ try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_MODELS) || "[]"); } catch (_) { return []; } }
+    function readUnits(){ try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_UNITS) || "[]"); } catch (_) { return []; } }
+    function saveModels(v){ localStorage.setItem(STORAGE_FLEET_MODELS, JSON.stringify(v)); }
+    function saveUnits(v){ localStorage.setItem(STORAGE_FLEET_UNITS, JSON.stringify(v)); }
+
+    const defaults = {
+      "1": { name: "Bentley Mulsanne", brand: "Bentley", type: "Luxury", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 4, dailyRate: 1200, image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/f0ea121030f0411da3deebf7aa135cc6~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=zza%2FXeIqssl8Tk1tLnkMC7y1zco%3D", description: "Luxury sedan for premium rides." },
+      "2": { name: "Toyota Highlander", brand: "Toyota", type: "SUV", seats: 7, fuelType: "Gasoline", transmission: "AT", luggage: 5, dailyRate: 500, image: "https://p26-doubao-search-sign.byteimg.com/labis/be5b7e593335b4da1ded8cb1249a0cec~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=ylh2pl%2Bw5kFcqUlV7vfJpS%2Bs6pk%3D", description: "Spacious SUV for families." },
+      "3": { name: "Audi A7", brand: "Audi", type: "Sedan", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 3, dailyRate: 600, image: "https://p26-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/679935761a14474b82255871fecfb986~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=jDdaCxgfXmwu9A%2BqZH6CQXr7YU0%3D", description: "Sporty business sedan." },
+      "4": { name: "Mercedes V-Class", brand: "Mercedes", type: "Van", seats: 9, fuelType: "Diesel", transmission: "AT", luggage: 6, dailyRate: 800, image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-qvj2lq49k0/2021c923a31e4713908c0b7ea46b7fa4~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=oGs%2BDQUMuKK2fGDLhNARCgVxwKs%3D", description: "Executive van for group travel." },
+      "5": { name: "Volvo S90", brand: "Volvo", type: "Sedan", seats: 5, fuelType: "Hybrid", transmission: "AT", luggage: 3, dailyRate: 450, image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/abf692a8eaae4b6184697a4d48081ebf~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=29fpZ7J%2BEN81ejrIMLeFfMQpIBQ%3D", description: "Comfort-focused premium sedan." },
+      "6": { name: "Haval H7", brand: "Haval", type: "SUV", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 4, dailyRate: 350, image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/3a54bf231a684a46911e9d8cfd585e90~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785309540&x-signature=tt5FyQlcICYQOlt6pBdq0zbjt1U%3D", description: "Cost-effective SUV for daily use." },
+      "FLEET": { name: "Fleet Pool", brand: "Aero", type: "Mixed", seats: 5, fuelType: "Gasoline", transmission: "AT", luggage: 3, dailyRate: 299, image: "", description: "Generic fleet package." }
+    };
+
+    function seedUnitsForModel(modelId, count, model) {
+      const colors = ["Black", "White", "Silver", "Blue", "Red"];
+      const list = [];
+      for (let i = 1; i <= count; i += 1) {
+        list.push({
+          unitId: `${modelId}-${String(i).padStart(3, "0")}`,
+          modelId,
+          name: `${model.name || modelId} #${i}`,
+          color: colors[(i - 1) % colors.length],
+          fuelType: model.fuelType || "Gasoline",
+          transmission: model.transmission || "AT",
+          seats: Number(model.seats || 5),
+          plateNo: "",
+          mileage: 0,
+          active: true
+        });
+      }
+      return list;
+    }
+
+    function ensureFleetData() {
+      let models = readModels();
+      let units = readUnits();
+
+      if (models.length && units.length) {
+        models = models.map((m) => {
+          const d = defaults[String(m.modelId)] || defaults.FLEET;
+          return {
+            ...m,
+            name: m.name || d.name,
+            brand: m.brand || d.brand,
+            type: m.type || d.type,
+            seats: Number(m.seats || d.seats || 5),
+            fuelType: m.fuelType || d.fuelType || "Gasoline",
+            transmission: m.transmission || d.transmission || "AT",
+            luggage: Number(m.luggage || d.luggage || 3),
+            dailyRate: Number(m.dailyRate || d.dailyRate || 0),
+            image: m.image || d.image || "",
+            description: m.description || d.description || "",
+            active: m.active !== false
+          };
+        });
+
+        units = units.map((u) => {
+          const model = models.find((m) => String(m.modelId) === String(u.modelId));
+          return {
+            ...u,
+            name: u.name || `${u.modelId}-unit`,
+            color: u.color || "Black",
+            fuelType: u.fuelType || (model ? model.fuelType : "Gasoline"),
+            transmission: u.transmission || (model ? model.transmission : "AT"),
+            seats: Number(u.seats || (model ? model.seats : 5)),
+            plateNo: u.plateNo || "",
+            mileage: Number(u.mileage || 0),
+            active: u.active !== false
+          };
+        });
+
+        saveModels(models);
+        saveUnits(units);
+        return { models, units };
+      }
+
+      models = [
+        { modelId: "1", ...defaults["1"], active: true },
+        { modelId: "2", ...defaults["2"], active: true },
+        { modelId: "3", ...defaults["3"], active: true },
+        { modelId: "4", ...defaults["4"], active: true },
+        { modelId: "5", ...defaults["5"], active: true },
+        { modelId: "6", ...defaults["6"], active: true },
+        { modelId: "FLEET", ...defaults.FLEET, active: true }
+      ];
+
+      units = [
+        ...seedUnitsForModel("1", 2, models[0]),
+        ...seedUnitsForModel("2", 4, models[1]),
+        ...seedUnitsForModel("3", 3, models[2]),
+        ...seedUnitsForModel("4", 2, models[3]),
+        ...seedUnitsForModel("5", 3, models[4]),
+        ...seedUnitsForModel("6", 5, models[5]),
+        ...seedUnitsForModel("FLEET", 50, models[6])
+      ];
+
+      saveModels(models);
+      saveUnits(units);
+      return { models, units };
+    }
+
+    function statusKey(status) {
+      const s = String(status || "").toLowerCase();
+      if (s.includes("confirmed") || s.includes("已确认")) return "confirmed";
+      if (s.includes("rejected") || s.includes("已拒绝")) return "rejected";
+      if (s.includes("completed") || s.includes("已完成")) return "completed";
+      return "pending";
+    }
+
+    function overlap(aStart, aEnd, bStart, bEnd) {
+      return aStart <= bEnd && bStart <= aEnd;
+    }
+
+    function toDate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+
+    function nextModelId(models) {
+      const used = new Set(models.map((m) => String(m.modelId)));
+      let n = 1;
+      while (used.has(String(n))) n += 1;
+      return String(n);
+    }
+
+    function nextUnitId(modelId, units) {
+      const count = units.filter((u) => String(u.modelId) === String(modelId)).length + 1;
+      return `${modelId}-${String(count).padStart(3, "0")}`;
+    }
+
+    function parseCsvLine(line) {
+      const out = [];
+      let cur = "";
+      let inQuote = false;
+      for (let i = 0; i < line.length; i += 1) {
+        const ch = line[i];
+        if (ch === '"' && inQuote && line[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+          continue;
+        }
+        if (ch === '"') {
+          inQuote = !inQuote;
+          continue;
+        }
+        if (ch === "," && !inQuote) {
+          out.push(cur.trim());
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      out.push(cur.trim());
+      return out;
+    }
+
+    function parseCsvText(text) {
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length < 2) return [];
+      const headers = parseCsvLine(lines[0]).map((h) => h.trim());
+      return lines.slice(1).map((line) => {
+        const values = parseCsvLine(line);
+        const row = {};
+        headers.forEach((h, i) => { row[h] = values[i] != null ? values[i] : ""; });
+        return row;
+      });
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = rows.map((r) => r.map((v) => {
+        const s = String(v == null ? "" : v);
+        if (s.includes(",") || s.includes("\n") || s.includes('"')) return `"${s.replace(/"/g, '""')}"`;
+        return s;
+      }).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function importModelRows(rows) {
+      const { models: curModels } = ensureFleetData();
+      const modelMap = new Map(curModels.map((m) => [String(m.modelId), { ...m }]));
+      rows.forEach((r) => {
+        const modelId = String(r.modelId || "").trim();
+        if (!modelId) return;
+        modelMap.set(modelId, {
+          modelId,
+          name: String(r.name || "").trim(),
+          brand: String(r.brand || "").trim(),
+          type: String(r.type || "").trim(),
+          seats: Math.max(1, Number(r.seats || 5)),
+          fuelType: String(r.fuelType || "Gasoline").trim(),
+          transmission: String(r.transmission || "AT").trim(),
+          luggage: Math.max(0, Number(r.luggage || 0)),
+          dailyRate: Math.max(0, Number(r.dailyRate || 0)),
+          image: String(r.image || "").trim(),
+          description: String(r.description || "").trim(),
+          active: String(r.active || "true").toLowerCase() !== "false"
+        });
+      });
+      saveModels(Array.from(modelMap.values()));
+    }
+
+    function importUnitRows(rows) {
+      const { units: curUnits } = ensureFleetData();
+      const unitMap = new Map(curUnits.map((u) => [String(u.unitId), { ...u }]));
+      rows.forEach((r) => {
+        const unitId = String(r.unitId || "").trim();
+        const modelId = String(r.modelId || "").trim();
+        if (!unitId || !modelId) return;
+        unitMap.set(unitId, {
+          unitId,
+          modelId,
+          name: String(r.name || "").trim(),
+          color: String(r.color || "Black").trim(),
+          fuelType: String(r.fuelType || "Gasoline").trim(),
+          transmission: String(r.transmission || "AT").trim(),
+          seats: Math.max(1, Number(r.seats || 5)),
+          plateNo: String(r.plateNo || "").trim(),
+          mileage: Math.max(0, Number(r.mileage || 0)),
+          active: String(r.active || "true").toLowerCase() !== "false"
+        });
+      });
+      saveUnits(Array.from(unitMap.values()));
+    }
+
+    const startInput = document.getElementById("range-start");
+    const endInput = document.getElementById("range-end");
+    const today = new Date();
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+    startInput.value = toDate(today);
+    endInput.value = toDate(tomorrow);
+
+    function render() {
+      const { models, units } = ensureFleetData();
+      const orders = readOrders();
+      const start = startInput.value;
+      const end = endInput.value;
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      models.forEach((m, idx) => {
+        const modelUnits = units.filter((u) => String(u.modelId) === String(m.modelId));
+        const activeUnits = modelUnits.filter((u) => u.active !== false);
+        const relevantOrders = orders.filter((o) => {
+          if (String(o.vehicleId || "") !== String(m.modelId)) return false;
+          const sKey = statusKey(o.status);
+          if (sKey === "rejected" || sKey === "completed") return false;
+          if (!o.pickupDate || !o.returnDate) return false;
+          return overlap(start, end, o.pickupDate, o.returnDate);
+        });
+
+        const bookedUnitIds = new Set(relevantOrders.filter((o) => o.unitId).map((o) => String(o.unitId)));
+        const legacyCount = relevantOrders.filter((o) => !o.unitId).length;
+        const bookedCount = Math.min(activeUnits.length, bookedUnitIds.size + legacyCount);
+        const availableCount = Math.max(0, activeUnits.length - bookedCount);
+
+        const tr = document.createElement("tr");
+        tr.className = "border-t align-top";
+        tr.innerHTML = `
+          <td class="p-3"><button class="px-2 py-1 border rounded text-xs" data-expand="${idx}">Expand</button></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="modelId" class="border rounded px-2 py-1 w-20" value="${m.modelId || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="name" class="border rounded px-2 py-1 w-40" value="${m.name || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="brand" class="border rounded px-2 py-1 w-28" value="${m.brand || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="type" class="border rounded px-2 py-1 w-28" value="${m.type || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="seats" type="number" min="1" class="border rounded px-2 py-1 w-16" value="${Number(m.seats || 5)}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="fuelType" class="border rounded px-2 py-1 w-24" value="${m.fuelType || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="transmission" class="border rounded px-2 py-1 w-20" value="${m.transmission || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="luggage" type="number" min="0" class="border rounded px-2 py-1 w-16" value="${Number(m.luggage || 0)}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="dailyRate" type="number" min="0" class="border rounded px-2 py-1 w-24" value="${Number(m.dailyRate || 0)}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="image" class="border rounded px-2 py-1 w-56" value="${m.image || ""}"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="description" class="border rounded px-2 py-1 w-56" value="${m.description || ""}"></td>
+          <td class="p-3">${activeUnits.length}</td>
+          <td class="p-3">${bookedCount}</td>
+          <td class="p-3 ${availableCount === 0 ? "text-red-600" : "text-green-700"}">${availableCount}</td>
+          <td class="p-3"><input data-idx="${idx}" data-field="active" type="checkbox" ${m.active !== false ? "checked" : ""}></td>
+        `;
+        tbody.appendChild(tr);
+
+        const detailRow = document.createElement("tr");
+        detailRow.className = "hidden";
+        detailRow.id = `detail-${idx}`;
+        const td = document.createElement("td");
+        td.colSpan = 16;
+
+        const tpl = document.getElementById("unit-panel-template").content.cloneNode(true);
+        const unitTbody = tpl.querySelector(".unit-tbody");
+        const addUnitBtn = tpl.querySelector(".add-unit-btn");
+        addUnitBtn.setAttribute("data-model-id", m.modelId);
+
+        modelUnits.forEach((u) => {
+          const matched = relevantOrders.filter((o) => String(o.unitId || "") === String(u.unitId));
+          const status = matched.length ? "BOOKED" : "FREE";
+          const ranges = matched.length
+            ? matched.map((o) => `${o.orderId} (${o.pickupDate}~${o.returnDate})`).join("; ")
+            : "-";
+
+          const utr = document.createElement("tr");
+          utr.className = "border-t";
+          utr.innerHTML = `
+            <td class="p-2 font-mono">${u.unitId}</td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="name" class="border rounded px-2 py-1 w-32" value="${u.name || ""}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="color" class="border rounded px-2 py-1 w-24" value="${u.color || ""}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="fuelType" class="border rounded px-2 py-1 w-24" value="${u.fuelType || ""}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="transmission" class="border rounded px-2 py-1 w-20" value="${u.transmission || ""}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="seats" type="number" min="1" class="border rounded px-2 py-1 w-16" value="${Number(u.seats || m.seats || 5)}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="plateNo" class="border rounded px-2 py-1 w-24" value="${u.plateNo || ""}"></td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="mileage" type="number" min="0" class="border rounded px-2 py-1 w-20" value="${Number(u.mileage || 0)}"></td>
+            <td class="p-2 ${status === "BOOKED" ? "text-red-600" : "text-green-700"}">${status}</td>
+            <td class="p-2 max-w-[300px]">${ranges}</td>
+            <td class="p-2"><input data-unit-id="${u.unitId}" data-unit-field="active" type="checkbox" ${u.active !== false ? "checked" : ""}></td>
+          `;
+          unitTbody.appendChild(utr);
+        });
+
+        if (!modelUnits.length) {
+          const utr = document.createElement("tr");
+          utr.innerHTML = `<td class="p-2 text-gray-500" colspan="11">No units configured</td>`;
+          unitTbody.appendChild(utr);
+        }
+
+        td.appendChild(tpl);
+        detailRow.appendChild(td);
+        tbody.appendChild(detailRow);
+      });
+
+      document.querySelectorAll("[data-expand]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = btn.getAttribute("data-expand");
+          const row = document.getElementById(`detail-${idx}`);
+          const hidden = row.classList.contains("hidden");
+          row.classList.toggle("hidden", !hidden);
+          btn.textContent = hidden ? "Collapse" : "Expand";
+        });
+      });
+
+      document.querySelectorAll(".add-unit-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const { models } = ensureFleetData();
+          const modelId = btn.getAttribute("data-model-id");
+          const model = models.find((m) => String(m.modelId) === String(modelId));
+          if (!model) return;
+          const units = readUnits();
+          units.push({
+            unitId: nextUnitId(modelId, units),
+            modelId,
+            name: `${model.name} Unit`,
+            color: "Black",
+            fuelType: model.fuelType || "Gasoline",
+            transmission: model.transmission || "AT",
+            seats: Number(model.seats || 5),
+            plateNo: "",
+            mileage: 0,
+            active: true
+          });
+          saveUnits(units);
+          render();
+        });
+      });
+    }
+
+    document.getElementById("check-btn").addEventListener("click", render);
+
+    document.getElementById("add-model-btn").addEventListener("click", () => {
+      const { models } = ensureFleetData();
+      const units = readUnits();
+      const newId = nextModelId(models);
+      const model = {
+        modelId: newId,
+        name: `New Model ${newId}`,
+        brand: "Brand",
+        type: "Sedan",
+        seats: 5,
+        fuelType: "Gasoline",
+        transmission: "AT",
+        luggage: 3,
+        dailyRate: 300,
+        image: "",
+        description: "",
+        active: true
+      };
+      models.push(model);
+      units.push(...seedUnitsForModel(newId, 1, model));
+      saveModels(models);
+      saveUnits(units);
+      render();
+    });
+
+    document.getElementById("save-btn").addEventListener("click", () => {
+      const { models: oldModels } = ensureFleetData();
+      let units = readUnits();
+
+      const models = oldModels.map((m) => ({ ...m }));
+      document.querySelectorAll("#tbody input[data-field]").forEach((el) => {
+        const idx = Number(el.getAttribute("data-idx"));
+        const field = el.getAttribute("data-field");
+        if (!models[idx]) return;
+
+        if (field === "active") models[idx].active = el.checked;
+        else if (["dailyRate", "seats", "luggage"].includes(field)) models[idx][field] = Math.max(0, Number(el.value || 0));
+        else models[idx][field] = el.value.trim();
+      });
+
+      const modelIdRemap = new Map();
+      oldModels.forEach((oldM, idx) => {
+        const newModelId = String(models[idx].modelId || oldM.modelId);
+        modelIdRemap.set(String(oldM.modelId), newModelId);
+      });
+
+      units = units.map((u) => {
+        const nextModelId = modelIdRemap.get(String(u.modelId)) || String(u.modelId);
+        return { ...u, modelId: nextModelId };
+      });
+
+      document.querySelectorAll("#tbody input[data-unit-field]").forEach((el) => {
+        const unitId = el.getAttribute("data-unit-id");
+        const field = el.getAttribute("data-unit-field");
+        const unit = units.find((u) => String(u.unitId) === String(unitId));
+        if (!unit) return;
+        if (field === "active") unit.active = el.checked;
+        else if (["seats", "mileage"].includes(field)) unit[field] = Math.max(0, Number(el.value || 0));
+        else unit[field] = el.value.trim();
+      });
+
+      const modelIds = new Set(models.map((m) => String(m.modelId)));
+      units = units.filter((u) => modelIds.has(String(u.modelId)));
+
+      const usedUnitIds = new Set();
+      units = units.map((u) => {
+        let id = String(u.unitId || "");
+        if (!id || usedUnitIds.has(id)) {
+          id = nextUnitId(String(u.modelId), units);
+        }
+        usedUnitIds.add(id);
+        return { ...u, unitId: id };
+      });
+
+      saveModels(models);
+      saveUnits(units);
+
+      document.getElementById("save-msg").textContent = "Saved.";
+      setTimeout(() => { document.getElementById("save-msg").textContent = ""; }, 1500);
+      render();
+    });
+
+    document.getElementById("download-model-template-btn").addEventListener("click", () => {
+      const rows = [
+        ["modelId","name","brand","type","seats","fuelType","transmission","luggage","dailyRate","image","description","active"],
+        ["101","Toyota Vios","Toyota","Sedan","5","Gasoline","AT","2","1800","https://example.com/vios.jpg","City sedan","true"]
+      ];
+      downloadCsv("fleet_model_template.csv", rows);
+    });
+
+    document.getElementById("download-unit-template-btn").addEventListener("click", () => {
+      const rows = [
+        ["unitId","modelId","name","color","fuelType","transmission","seats","plateNo","mileage","active"],
+        ["101-001","101","Toyota Vios #1","Black","Gasoline","AT","5","ABC1234","12000","true"],
+        ["101-002","101","Toyota Vios #2","White","Gasoline","AT","5","ABC2234","9800","true"]
+      ];
+      downloadCsv("fleet_unit_template.csv", rows);
+    });
+
+    document.getElementById("import-model-input").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const rows = parseCsvText(text);
+      importModelRows(rows);
+      document.getElementById("save-msg").textContent = `Imported ${rows.length} model rows.`;
+      render();
+      e.target.value = "";
+    });
+
+    document.getElementById("import-unit-input").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const rows = parseCsvText(text);
+      importUnitRows(rows);
+      document.getElementById("save-msg").textContent = `Imported ${rows.length} unit rows.`;
+      render();
+      e.target.value = "";
+    });
+
+    render();
+  </script>
+</body>
+</html>

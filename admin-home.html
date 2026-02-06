@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Admin Dashboard</h1>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="client-home.html" class="hover:underline">Go to Client Site</a>
+        <button id="admin-logout" class="border border-white/50 px-3 py-1 rounded">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Today Orders</div>
+        <div id="stat-today-orders" class="text-3xl font-bold text-[#0A2463] mt-2">0</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Pending Orders</div>
+        <div id="stat-pending-orders" class="text-3xl font-bold text-[#0A2463] mt-2">0</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Fully Booked Vehicles</div>
+        <div id="stat-full-vehicles" class="text-3xl font-bold text-[#0A2463] mt-2">0</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">This Month Revenue</div>
+        <div id="stat-month-revenue" class="text-3xl font-bold text-[#0A2463] mt-2">₱0</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">This Month Rental Days</div>
+        <div id="stat-month-days" class="text-3xl font-bold text-[#0A2463] mt-2">0</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <a href="admin-orders.html" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+        <div class="text-sm text-gray-500">Orders</div>
+        <h2 class="text-2xl font-bold text-[#0A2463] mt-2">Order Management</h2>
+        <p class="text-gray-600 mt-2">Review, confirm, reject, complete, payment details, and export.</p>
+      </a>
+      <a href="admin-customers.html" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+        <div class="text-sm text-gray-500">Customers</div>
+        <h2 class="text-2xl font-bold text-[#0A2463] mt-2">Customer Directory</h2>
+        <p class="text-gray-600 mt-2">Each customer has a customer ID and detail view.</p>
+      </a>
+      <a href="admin-inventory.html" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+        <div class="text-sm text-gray-500">Fleet</div>
+        <h2 class="text-2xl font-bold text-[#0A2463] mt-2">Vehicle Inventory</h2>
+        <p class="text-gray-600 mt-2">Model/unit maintenance plus CSV template upload.</p>
+      </a>
+      <a href="admin-pricing.html" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+        <div class="text-sm text-gray-500">Pricing</div>
+        <h2 class="text-2xl font-bold text-[#0A2463] mt-2">Rental Pricing</h2>
+        <p class="text-gray-600 mt-2">Model-linked prices for daily, weekly, monthly, and with-driver rental.</p>
+      </a>
+      <a href="admin-site-settings.html" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition">
+        <div class="text-sm text-gray-500">Site</div>
+        <h2 class="text-2xl font-bold text-[#0A2463] mt-2">Site Settings</h2>
+        <p class="text-gray-600 mt-2">Manage pickup locations, contact info, social links, and about text.</p>
+      </a>
+    </div>
+
+    <section class="bg-white rounded-lg shadow overflow-x-auto">
+      <div class="p-4 border-b">
+        <h3 class="font-semibold">Monthly Model Utilization</h3>
+      </div>
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Model ID</th>
+            <th class="p-3 text-left">Model Name</th>
+            <th class="p-3 text-left">Orders in Month</th>
+            <th class="p-3 text-left">Rental Days in Month</th>
+            <th class="p-3 text-left">Revenue in Month</th>
+          </tr>
+        </thead>
+        <tbody id="model-stats-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_FLEET_MODELS = "aeroFleetModels";
+    const STORAGE_FLEET_UNITS = "aeroFleetUnits";
+
+    const auth = (() => {
+      try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; }
+    })();
+    if (!auth || auth.role !== "admin") {
+      window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-home.html")}`;
+    }
+
+    document.getElementById("admin-logout").addEventListener("click", () => {
+      if (!window.confirm("Confirm logout?")) return;
+      sessionStorage.removeItem(STORAGE_ADMIN_AUTH);
+      window.location.href = "admin-auth.html";
+    });
+
+    function readOrders() { try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function readFleetModels() { try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_MODELS) || "[]"); } catch (_) { return []; } }
+    function readFleetUnits() { try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_UNITS) || "[]"); } catch (_) { return []; } }
+    function fmt(n){ return `₱${Number(n || 0).toLocaleString("en-US")}`; }
+
+    function seedUnitsForModel(modelId, count) {
+      const units = [];
+      for (let i = 1; i <= count; i += 1) {
+        units.push({ unitId: `${modelId}-${String(i).padStart(3, "0")}`, modelId, name: `${modelId}-${i}`, active: true });
+      }
+      return units;
+    }
+
+    function ensureFleetData() {
+      let models = readFleetModels();
+      let units = readFleetUnits();
+      if (models.length && units.length) return { models, units };
+      models = [
+        { modelId: "1", name: "Bentley Mulsanne", active: true },
+        { modelId: "2", name: "Toyota Highlander", active: true },
+        { modelId: "3", name: "Audi A7", active: true },
+        { modelId: "4", name: "Mercedes V-Class", active: true },
+        { modelId: "5", name: "Volvo S90", active: true },
+        { modelId: "6", name: "Haval H7", active: true },
+        { modelId: "FLEET", name: "Fleet Pool", active: true }
+      ];
+      units = [
+        ...seedUnitsForModel("1", 2), ...seedUnitsForModel("2", 4), ...seedUnitsForModel("3", 3),
+        ...seedUnitsForModel("4", 2), ...seedUnitsForModel("5", 3), ...seedUnitsForModel("6", 5), ...seedUnitsForModel("FLEET", 50)
+      ];
+      localStorage.setItem(STORAGE_FLEET_MODELS, JSON.stringify(models));
+      localStorage.setItem(STORAGE_FLEET_UNITS, JSON.stringify(units));
+      return { models, units };
+    }
+
+    function statusKey(status) {
+      const s = String(status || "").toLowerCase();
+      if (s.includes("confirmed") || s.includes("已确认")) return "confirmed";
+      if (s.includes("rejected") || s.includes("已拒绝")) return "rejected";
+      if (s.includes("completed") || s.includes("已完成")) return "completed";
+      return "pending";
+    }
+
+    function toISODate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function overlap(aStart, aEnd, bStart, bEnd) {
+      return aStart <= bEnd && bStart <= aEnd;
+    }
+
+    function toDateAtStart(yyyyMmDd) {
+      const [y, m, d] = String(yyyyMmDd || "").split("-").map(Number);
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
+    }
+
+    function monthOverlapDays(pickupDate, returnDate, monthStartDate, monthNextDate) {
+      const start = toDateAtStart(pickupDate);
+      const end = toDateAtStart(returnDate);
+      if (!start || !end) return 0;
+      const s = Math.max(start.getTime(), monthStartDate.getTime());
+      const e = Math.min(end.getTime(), monthNextDate.getTime());
+      const ms = e - s;
+      return ms > 0 ? Math.round(ms / 86400000) : 0;
+    }
+
+    function inThisMonth(dateLike, monthStartDate, monthNextDate) {
+      if (!dateLike) return false;
+      const d = new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return false;
+      return d >= monthStartDate && d < monthNextDate;
+    }
+
+    function renderStats() {
+      const orders = readOrders();
+      const { models, units } = ensureFleetData();
+      const now = new Date();
+      const todayISO = toISODate(now);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthNext = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const todayOrders = orders.filter((o) => {
+        if (!o.createdAt) return false;
+        const t = new Date(o.createdAt);
+        return !Number.isNaN(t.getTime()) && t >= todayStart && t <= todayEnd;
+      }).length;
+
+      const pendingOrders = orders.filter((o) => statusKey(o.status) === "pending").length;
+
+      const fullVehicles = models.filter((m) => {
+        if (m.active === false) return false;
+        const activeUnits = units.filter((u) => String(u.modelId) === String(m.modelId) && u.active !== false);
+        const totalUnits = activeUnits.length;
+        const modelOrders = orders.filter((o) => {
+          const s = statusKey(o.status);
+          if (s === "rejected" || s === "completed") return false;
+          if (String(o.vehicleId || "") !== String(m.modelId)) return false;
+          if (!o.pickupDate || !o.returnDate) return false;
+          return overlap(todayISO, todayISO, o.pickupDate, o.returnDate);
+        });
+        const bookedUnits = new Set(modelOrders.filter((o) => o.unitId).map((o) => String(o.unitId)));
+        const legacyCount = modelOrders.filter((o) => !o.unitId).length;
+        const booked = Math.min(totalUnits, bookedUnits.size + legacyCount);
+        return booked >= totalUnits && totalUnits > 0;
+      }).length;
+
+      let monthRevenue = 0;
+      let monthDaysTotal = 0;
+      const modelNameMap = new Map(models.map((m) => [String(m.modelId), m.name || String(m.modelId)]));
+      const modelAgg = new Map();
+
+      orders.forEach((o) => {
+        const key = statusKey(o.status);
+        if (key === "rejected") return;
+
+        const modelId = String(o.vehicleId || "UNKNOWN");
+        if (!modelAgg.has(modelId)) {
+          modelAgg.set(modelId, {
+            modelId,
+            modelName: modelNameMap.get(modelId) || o.carName || modelId,
+            ordersInMonth: 0,
+            rentalDaysInMonth: 0,
+            revenueInMonth: 0
+          });
+        }
+
+        const days = monthOverlapDays(o.pickupDate, o.returnDate, monthStart, monthNext);
+        if (days > 0) {
+          modelAgg.get(modelId).ordersInMonth += 1;
+          modelAgg.get(modelId).rentalDaysInMonth += days;
+          monthDaysTotal += days;
+        }
+
+        const paidLikeDate = o.paymentDate || o.completedAt || o.updatedAt || o.createdAt;
+        if ((key === "confirmed" || key === "completed") && inThisMonth(paidLikeDate, monthStart, monthNext)) {
+          const amount = Number(o.total || 0);
+          monthRevenue += amount;
+          modelAgg.get(modelId).revenueInMonth += amount;
+        }
+      });
+
+      document.getElementById("stat-today-orders").textContent = String(todayOrders);
+      document.getElementById("stat-pending-orders").textContent = String(pendingOrders);
+      document.getElementById("stat-full-vehicles").textContent = String(fullVehicles);
+      document.getElementById("stat-month-revenue").textContent = fmt(monthRevenue);
+      document.getElementById("stat-month-days").textContent = String(monthDaysTotal);
+
+      const body = document.getElementById("model-stats-body");
+      body.innerHTML = "";
+      const rows = Array.from(modelAgg.values()).sort((a, b) => b.rentalDaysInMonth - a.rentalDaysInMonth);
+      if (!rows.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="p-4 text-gray-500" colspan="5">No monthly data</td>`;
+        body.appendChild(tr);
+        return;
+      }
+
+      rows.forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.className = "border-t";
+        tr.innerHTML = `
+          <td class="p-3 font-mono">${r.modelId}</td>
+          <td class="p-3">${r.modelName}</td>
+          <td class="p-3">${r.ordersInMonth}</td>
+          <td class="p-3">${r.rentalDaysInMonth}</td>
+          <td class="p-3">${fmt(r.revenueInMonth)}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    renderStats();
+  </script>
+</body>
+</html>

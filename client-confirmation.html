@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Confirmation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <main class="min-h-screen flex items-center justify-center p-4">
+    <section class="bg-white rounded-xl shadow-lg max-w-2xl w-full p-8 text-center">
+      <div class="text-left mb-3">
+        <button id="go-back-btn" type="button" class="text-sm text-[#0A2463] hover:underline">← Back</button>
+      </div>
+      <h1 id="title" class="text-3xl font-bold text-[#0A2463] mb-2"></h1>
+      <p id="subtitle" class="text-gray-600 mb-6"></p>
+      <div id="not-found" class="hidden mb-5 p-3 bg-red-100 text-red-700 rounded"></div>
+
+      <div id="order-card" class="bg-gray-50 rounded-lg p-4 text-left space-y-2 text-sm mb-6">
+        <div class="flex justify-between"><span id="l1"></span><strong id="orderId">-</strong></div>
+        <div class="flex justify-between"><span id="l2"></span><strong id="name">-</strong></div>
+        <div class="flex justify-between"><span id="l3"></span><strong id="phone">-</strong></div>
+        <div class="flex justify-between"><span id="l4"></span><strong id="carName">-</strong></div>
+        <div class="flex justify-between"><span id="l5"></span><strong id="days">-</strong></div>
+        <div class="flex justify-between"><span id="l6"></span><strong id="total">-</strong></div>
+        <div class="flex justify-between"><span id="l7"></span><strong id="status">-</strong></div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <a id="homeTxt" href="client-home.html" class="border border-[#0A2463] text-[#0A2463] py-2 rounded-md hover:bg-blue-50"></a>
+        <a id="ordersTxt" href="client-orders.html" class="border border-gray-400 text-gray-700 py-2 rounded-md hover:bg-gray-50"></a>
+        <a id="callTxt" href="tel:+639171234567" class="bg-[#0A2463] text-white py-2 rounded-md hover:bg-[#123884]"></a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_LANG = "aeroLang";
+    const lang = localStorage.getItem(STORAGE_LANG) || "zh-CN";
+    const i18n = {
+      "zh-CN": { title:"预订提交成功", subtitle:"我们已收到您的订单，客服将在 10 分钟内与您联系确认。", subtitleConfirmed:"在线支付成功，您的订单已自动确认。", nf:"订单不存在或已清空，请重新下单。", home:"返回首页", orders:"查看我的订单", call:"联系顾问", l1:"订单号", l2:"客户姓名", l3:"联系电话", l4:"车型", l5:"租期", l6:"预估金额", l7:"状态", back:"返回上一步" },
+      "en-US": { title:"Booking Submitted", subtitle:"Your order is received. Our team will contact you within 10 minutes.", subtitleConfirmed:"Payment succeeded. Your order is auto-confirmed.", nf:"Order not found. Please place a new booking.", home:"Back Home", orders:"View My Orders", call:"Call Advisor", l1:"Order ID", l2:"Customer", l3:"Phone", l4:"Vehicle", l5:"Duration", l6:"Amount", l7:"Status", back:"Back" }
+    };
+    const t = (k) => i18n[lang][k] || k;
+    function readOrders() { try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function fmt(n) { return `₱${Number(n).toLocaleString("en-US")}`; }
+    function normalizeStatus(s) {
+      const v = String(s || "").toLowerCase();
+      if (v.includes("待支付") || v.includes("pending payment")) return (lang === "zh-CN" ? "待支付" : "Pending Payment");
+      if (v.includes("待确认") || v.includes("pending")) return (lang === "zh-CN" ? "待确认" : "Pending");
+      if (v.includes("已确认") || v.includes("confirmed")) return (lang === "zh-CN" ? "已确认" : "Confirmed");
+      if (v.includes("已拒绝") || v.includes("rejected")) return (lang === "zh-CN" ? "已拒绝" : "Rejected");
+      if (v.includes("已完成") || v.includes("completed")) return (lang === "zh-CN" ? "已完成" : "Completed");
+      return s || "-";
+    }
+
+    document.documentElement.lang = lang;
+    ["title","subtitle","home","orders","call","l1","l2","l3","l4","l5","l6","l7"].forEach((k) => {
+      const map = { home:"homeTxt", orders:"ordersTxt", call:"callTxt" };
+      const id = map[k] || k;
+      if (document.getElementById(id)) document.getElementById(id).textContent = t(k);
+    });
+
+    const orderId = new URLSearchParams(window.location.search).get("orderId") || "";
+    const order = readOrders().find((o) => o.orderId === orderId);
+    document.getElementById("go-back-btn").textContent = `← ${t("back")}`;
+    document.getElementById("go-back-btn").addEventListener("click", () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "client-home.html";
+    });
+
+    if (!order) {
+      document.getElementById("not-found").classList.remove("hidden");
+      document.getElementById("not-found").textContent = t("nf");
+      document.getElementById("order-card").classList.add("hidden");
+    } else {
+      const statusNorm = normalizeStatus(order.status);
+      if ((statusNorm || "").toLowerCase().includes("confirmed") || (statusNorm || "").includes("已确认")) {
+        document.getElementById("subtitle").textContent = t("subtitleConfirmed");
+      }
+      document.getElementById("orderId").textContent = order.orderId;
+      document.getElementById("name").textContent = order.userName || "-";
+      document.getElementById("phone").textContent = order.phone || "-";
+      document.getElementById("carName").textContent = order.carName || "-";
+      document.getElementById("days").textContent = `${order.days || 1}`;
+      document.getElementById("total").textContent = fmt(order.total || 0);
+      document.getElementById("status").textContent = statusNorm;
+    }
+  </script>
+</body>
+</html>

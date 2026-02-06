@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Admin Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <section class="bg-white rounded-xl shadow-lg w-full max-w-md p-8">
+    <h1 class="text-2xl font-bold text-[#0A2463] mb-2">Admin Login</h1>
+    <p class="text-sm text-gray-600 mb-5">Only administrators can access the backend.</p>
+
+    <form id="admin-login-form" class="space-y-4">
+      <div>
+        <label class="block text-sm mb-1">Admin Username</label>
+        <input id="username" required class="w-full border rounded-md px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Admin Password</label>
+        <input id="password" type="password" required class="w-full border rounded-md px-3 py-2" />
+      </div>
+      <button class="w-full bg-[#0A2463] text-white py-2 rounded-md">Sign In</button>
+    </form>
+
+    <a href="client-home.html" class="mt-4 inline-block text-sm text-gray-500 hover:underline">Back to Client Site</a>
+    <p class="mt-4 text-xs text-gray-500">Default: admin / Admin@2026</p>
+  </section>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect") || "admin-home.html";
+
+    document.getElementById("admin-login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value;
+      if (u !== "admin" || p !== "Admin@2026") {
+        alert("Invalid credentials");
+        return;
+      }
+      sessionStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify({ role: "admin", username: u, loginAt: new Date().toISOString() }));
+      window.location.href = redirect;
+    });
+  </script>
+</body>
+</html>

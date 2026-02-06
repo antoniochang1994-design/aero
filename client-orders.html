@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="client-home.html" class="font-bold text-xl">Aero car rental</a>
+      <div class="flex items-center gap-4 text-sm">
+        <button id="go-back-btn" type="button" class="hover:underline">← Back</button>
+        <a href="client-booking.html" class="hover:underline" id="newOrder"></a>
+        <a href="client-home.html" class="hover:underline" id="home"></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <h1 id="title" class="text-3xl font-bold text-[#0A2463]"></h1>
+      <button id="refresh-btn" class="text-sm px-4 py-2 border rounded-md hover:bg-gray-50"></button>
+    </div>
+
+    <div id="need-login" class="hidden bg-yellow-100 text-yellow-900 p-4 rounded-md mb-4"></div>
+    <div id="empty" class="hidden bg-white p-6 rounded-lg shadow text-gray-600"></div>
+    <div id="orders-list" class="space-y-4"></div>
+  </main>
+
+  <script>
+    const STORAGE_CURRENT_USER = "aeroCurrentUser";
+    const STORAGE_ORDERS = "aeroOrders";
+    const STORAGE_LANG = "aeroLang";
+    const lang = localStorage.getItem(STORAGE_LANG) || "zh-CN";
+
+    const i18n = {
+      "zh-CN": { title:"我的订单", refresh:"刷新", needLogin:"请先登录再查看订单", goLogin:"前往登录", empty:"暂无订单，去首页选择车辆并下单。", newOrder:"继续下单", home:"返回首页", pickup:"取车", return:"还车", days:"天", status:"状态", total:"总价", note:"备注", docs:"证件", payment:"支付", unit:"车辆ID", color:"颜色", pending:"待确认", pendingPayment:"待支付", confirmed:"已确认", rejected:"已拒绝", completed:"已完成" },
+      "en-US": { title:"My Orders", refresh:"Refresh", needLogin:"Please login to view orders", goLogin:"Go login", empty:"No orders yet.", newOrder:"New Booking", home:"Back Home", pickup:"Pickup", return:"Return", days:"days", status:"Status", total:"Total", note:"Note", docs:"Documents", payment:"Payment", unit:"Unit ID", color:"Color", pending:"Pending", pendingPayment:"Pending Payment", confirmed:"Confirmed", rejected:"Rejected", completed:"Completed" }
+    };
+    const t = (k) => i18n[lang][k] || k;
+
+    function getCurrentUser(){ try { return JSON.parse(localStorage.getItem(STORAGE_CURRENT_USER) || "null"); } catch (_) { return null; } }
+    function readOrders(){ try { return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || "[]"); } catch (_) { return []; } }
+    function fmt(n){ return `₱${Number(n).toLocaleString("en-US")}`; }
+
+    function applyText() {
+      document.documentElement.lang = lang;
+      document.getElementById("go-back-btn").textContent = (lang === "zh-CN") ? "← 返回上一步" : "← Back";
+      document.getElementById("title").textContent = t("title");
+      document.getElementById("refresh-btn").textContent = t("refresh");
+      document.getElementById("newOrder").textContent = t("newOrder");
+      document.getElementById("home").textContent = t("home");
+      document.getElementById("empty").textContent = t("empty");
+    }
+
+    function normalizeStatus(s) {
+      const v = String(s || "").toLowerCase();
+      if (v.includes("pending payment") || v.includes("待支付")) return t("pendingPayment");
+      if (v.includes("待确认") || v.includes("pending")) return t("pending");
+      if (v.includes("已确认") || v.includes("confirmed")) return t("confirmed");
+      if (v.includes("已拒绝") || v.includes("rejected")) return t("rejected");
+      if (v.includes("已完成") || v.includes("completed")) return t("completed");
+      return s || "-";
+    }
+    function normalizePickup(v) {
+      const s = String(v || "").toLowerCase();
+      if (lang === "zh-CN") return v || "-";
+      if (s.includes("机场")) return "Airport";
+      if (s.includes("市中心")) return "Downtown";
+      if (s.includes("酒店")) return "Hotel";
+      if (s.includes("上门")) return "Door Delivery";
+      return v || "-";
+    }
+    function normalizePayment(v) {
+      const s = String(v || "").toLowerCase();
+      if (lang === "zh-CN") return v || "-";
+      if (s.includes("信用卡")) return "Credit Card";
+      if (s.includes("现金")) return "Cash";
+      if (s.includes("银行")) return "Bank Transfer";
+      return v || "-";
+    }
+
+    function render(){
+      const user = getCurrentUser();
+      const needLogin = document.getElementById("need-login");
+      const empty = document.getElementById("empty");
+      const list = document.getElementById("orders-list");
+      list.innerHTML = "";
+      needLogin.classList.add("hidden");
+      empty.classList.add("hidden");
+
+      if (!user) {
+        needLogin.classList.remove("hidden");
+        needLogin.innerHTML = `${t("needLogin")} <a class="underline" href="client-login.html?redirect=${encodeURIComponent("client-orders.html")}">${t("goLogin")}</a>`;
+        return;
+      }
+
+      const orders = readOrders().filter((o) => o.userId === user.id).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (!orders.length) { empty.classList.remove("hidden"); return; }
+
+      orders.forEach((order) => {
+        const card = document.createElement("article");
+        card.className = "bg-white rounded-lg shadow p-5";
+        card.innerHTML = `
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <div class="text-sm text-gray-500">${order.orderId}</div>
+              <h2 class="text-xl font-bold text-[#0A2463]">${order.carName || "-"}</h2>
+              <div class="text-sm text-gray-600 mt-1">${t("pickup")}: ${normalizePickup(order.pickup)} | ${order.pickupDate || "-"} ${order.pickupTime || ""}</div>
+              <div class="text-sm text-gray-600">${t("return")}: ${order.returnDate || "-"} ${order.returnTime || ""}</div>
+              <div class="text-sm text-gray-600">${order.days || 1} ${t("days")} | ${t("payment")}: ${normalizePayment(order.payment)}</div>
+              <div class="text-sm text-gray-600">${t("unit")}: ${order.unitId || "-"} | ${t("color")}: ${order.unitColor || "-"}</div>
+              <div class="text-sm text-gray-600">${t("docs")}: ${order.idNo || "-"} / ${order.licenseNo || "-"}</div>
+              ${order.note ? `<div class="text-sm text-gray-600">${t("note")}: ${order.note}</div>` : ""}
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500">${t("status")}</div>
+              <div class="font-semibold">${normalizeStatus(order.status)}</div>
+              <div class="text-lg font-bold text-[#0A2463] mt-2">${t("total")} ${fmt(order.total || 0)}</div>
+            </div>
+          </div>`;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById("refresh-btn").addEventListener("click", render);
+    document.getElementById("go-back-btn").addEventListener("click", () => {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "client-home.html";
+    });
+    applyText();
+    render();
+  </script>
+</body>
+</html>

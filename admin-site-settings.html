@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Site Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Site Settings</h1>
+      <a href="admin-home.html" class="text-sm hover:underline">Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <section class="bg-white rounded-lg shadow p-6 space-y-4">
+      <h2 class="font-semibold text-lg">Pickup Locations</h2>
+      <p class="text-sm text-gray-600">Door Delivery should have address text like "Customer address required".</p>
+      <div id="pickup-list" class="space-y-3"></div>
+      <button id="add-pickup-btn" type="button" class="px-4 py-2 border rounded">Add Pickup Location</button>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6 space-y-4">
+      <h2 class="font-semibold text-lg">Rental Pricing</h2>
+      <p class="text-sm text-gray-600">Rental prices are maintained in a dedicated module linked to inventory models.</p>
+      <a href="admin-pricing.html" class="inline-flex items-center px-4 py-2 border border-[#0A2463] text-[#0A2463] rounded hover:bg-[#0A2463] hover:text-white transition">Open Pricing Module</a>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-lg mb-4">Price Filter Range</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div><label class="block text-sm mb-1">Min</label><input id="price-min" type="number" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Max</label><input id="price-max" type="number" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Default</label><input id="price-default" type="number" class="w-full border rounded px-3 py-2" /></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6 space-y-4">
+      <h2 class="font-semibold text-lg">Contact & Follow</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm mb-1">Address (EN)</label><input id="contact-address-en" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Address (ZH)</label><input id="contact-address-zh" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Phone</label><input id="contact-phone" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Email (message receiver)</label><input id="contact-email" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Weekdays (EN)</label><input id="hours-weekdays-en" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Weekdays (ZH)</label><input id="hours-weekdays-zh" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Weekends (EN)</label><input id="hours-weekends-en" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Weekends (ZH)</label><input id="hours-weekends-zh" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Viber URL</label><input id="social-viber" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">WhatsApp URL</label><input id="social-whatsapp" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">LinkedIn URL</label><input id="social-linkedin" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Facebook URL</label><input id="social-facebook" class="w-full border rounded px-3 py-2" /></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6 space-y-4">
+      <h2 class="font-semibold text-lg">About Content</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm mb-1">Title (EN)</label><input id="about-title-en" class="w-full border rounded px-3 py-2" /></div>
+        <div><label class="block text-sm mb-1">Title (ZH)</label><input id="about-title-zh" class="w-full border rounded px-3 py-2" /></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm mb-1">Description 1 (EN)</label><textarea id="about-desc1-en" rows="3" class="w-full border rounded px-3 py-2"></textarea></div>
+        <div><label class="block text-sm mb-1">Description 1 (ZH)</label><textarea id="about-desc1-zh" rows="3" class="w-full border rounded px-3 py-2"></textarea></div>
+        <div><label class="block text-sm mb-1">Description 2 (EN)</label><textarea id="about-desc2-en" rows="3" class="w-full border rounded px-3 py-2"></textarea></div>
+        <div><label class="block text-sm mb-1">Description 2 (ZH)</label><textarea id="about-desc2-zh" rows="3" class="w-full border rounded px-3 py-2"></textarea></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-lg mb-4">Payment (Test)</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label class="block text-sm mb-1">Fake QR Prefix</label><input id="payment-qr-prefix" class="w-full border rounded px-3 py-2" /></div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button id="save-btn" class="px-5 py-3 bg-[#0A2463] text-white rounded">Save Settings</button>
+      <button id="reset-btn" class="px-5 py-3 border rounded">Reset to Defaults</button>
+      <span id="tip" class="text-sm text-green-700 self-center"></span>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const STORAGE_SITE_SETTINGS = "aeroSiteSettings";
+    const auth = (() => { try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; } })();
+    if (!auth || auth.role !== "admin") window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-site-settings.html")}`;
+
+    function defaults() {
+      return {
+        pickupLocations: [
+          { key: "airport", zh: "机场", en: "Airport", address: "NAIA Terminal 3, Pasay" },
+          { key: "downtown", zh: "市中心", en: "Downtown", address: "Makati CBD Service Point" },
+          { key: "hotel", zh: "酒店", en: "Hotel", address: "Hotel concierge desk" },
+          { key: "delivery", zh: "送车上门", en: "Door Delivery", address: "Customer address required" }
+        ],
+        priceFilter: { min: 100, max: 2000, default: 2000 },
+        contact: {
+          addressEn: "Makati CBD Service Center",
+          addressZh: "马尼拉马卡蒂服务中心",
+          phone: "+63 917 123 4567",
+          email: "service@aerocarrental.ph",
+          weekdaysEn: "Mon–Fri: 8:00 - 20:00",
+          weekdaysZh: "周一至周五: 8:00 - 20:00",
+          weekendsEn: "Sat–Sun: 9:00 - 18:00",
+          weekendsZh: "周六至周日: 9:00 - 18:00"
+        },
+        social: { viber: "#", whatsapp: "#", linkedin: "https://www.linkedin.com/", facebook: "https://www.facebook.com/" },
+        about: {
+          titleEn: "About Aero car rental", titleZh: "关于Aero car rental",
+          description1En: "Founded in 2010, Aero car rental delivers high-quality and convenient car rental experiences.",
+          description1Zh: "Aero car rental成立于2010年，是一家专业的汽车租赁服务提供商。",
+          description2En: "We offer economy to luxury vehicles with flexible daily/weekly/monthly plans.",
+          description2Zh: "我们提供从经济型到豪华车型的灵活日租、周租和月租方案。"
+        },
+        payment: { fakeQrPrefix: "AERO-PAY" }
+      };
+    }
+
+    function readSettings() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_SITE_SETTINGS) || "null"); } catch (_) { return null; }
+    }
+
+    function saveSettings(v) { localStorage.setItem(STORAGE_SITE_SETTINGS, JSON.stringify(v)); }
+
+    function setValue(id, v) { const el = document.getElementById(id); if (el) el.value = v == null ? "" : String(v); }
+    function getValue(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+    function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;"); }
+
+    function renderPickupRows(list) {
+      const wrap = document.getElementById("pickup-list");
+      if (!wrap) return;
+      const rows = Array.isArray(list) && list.length ? list : defaults().pickupLocations;
+      wrap.innerHTML = rows.map((p, idx) => `
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 border rounded p-3" data-pickup-row="${idx}">
+          <div><label class="block text-xs mb-1">Key</label><input data-field="key" class="w-full border rounded px-2 py-1" value="${esc(p.key)}" /></div>
+          <div><label class="block text-xs mb-1">EN</label><input data-field="en" class="w-full border rounded px-2 py-1" value="${esc(p.en)}" /></div>
+          <div><label class="block text-xs mb-1">ZH</label><input data-field="zh" class="w-full border rounded px-2 py-1" value="${esc(p.zh)}" /></div>
+          <div><label class="block text-xs mb-1">Address</label><input data-field="address" class="w-full border rounded px-2 py-1" value="${esc(p.address)}" /></div>
+          <div class="flex items-end"><button type="button" class="remove-pickup-btn px-3 py-1 border rounded text-red-600" data-row="${idx}">Remove</button></div>
+        </div>
+      `).join("");
+    }
+
+    function collectPickupRows() {
+      const rows = [];
+      document.querySelectorAll("[data-pickup-row]").forEach((row) => {
+        const key = row.querySelector('[data-field="key"]')?.value?.trim() || "";
+        const en = row.querySelector('[data-field="en"]')?.value?.trim() || "";
+        const zh = row.querySelector('[data-field="zh"]')?.value?.trim() || "";
+        const address = row.querySelector('[data-field="address"]')?.value?.trim() || "";
+        if (!key && !en && !zh) return;
+        rows.push({ key: key || en || zh, en: en || key || zh, zh: zh || en || key, address });
+      });
+      return rows.length ? rows : defaults().pickupLocations;
+    }
+
+    function loadToForm() {
+      const s = { ...defaults(), ...(readSettings() || {}) };
+      const merged = {
+        ...s,
+        pickupLocations: Array.isArray(s.pickupLocations) && s.pickupLocations.length ? s.pickupLocations : defaults().pickupLocations,
+        priceFilter: { ...defaults().priceFilter, ...(s.priceFilter || {}) },
+        contact: { ...defaults().contact, ...(s.contact || {}) },
+        social: { ...defaults().social, ...(s.social || {}) },
+        about: { ...defaults().about, ...(s.about || {}) },
+        payment: { ...defaults().payment, ...(s.payment || {}) }
+      };
+
+      renderPickupRows(merged.pickupLocations);
+      setValue("price-min", merged.priceFilter.min);
+      setValue("price-max", merged.priceFilter.max);
+      setValue("price-default", merged.priceFilter.default);
+
+      setValue("contact-address-en", merged.contact.addressEn);
+      setValue("contact-address-zh", merged.contact.addressZh);
+      setValue("contact-phone", merged.contact.phone);
+      setValue("contact-email", merged.contact.email);
+      setValue("hours-weekdays-en", merged.contact.weekdaysEn);
+      setValue("hours-weekdays-zh", merged.contact.weekdaysZh);
+      setValue("hours-weekends-en", merged.contact.weekendsEn);
+      setValue("hours-weekends-zh", merged.contact.weekendsZh);
+
+      setValue("social-viber", merged.social.viber || merged.social.weixin || "#");
+      setValue("social-whatsapp", merged.social.whatsapp || merged.social.weibo || "#");
+      setValue("social-linkedin", merged.social.linkedin);
+      setValue("social-facebook", merged.social.facebook);
+
+      setValue("about-title-en", merged.about.titleEn);
+      setValue("about-title-zh", merged.about.titleZh);
+      setValue("about-desc1-en", merged.about.description1En);
+      setValue("about-desc1-zh", merged.about.description1Zh);
+      setValue("about-desc2-en", merged.about.description2En);
+      setValue("about-desc2-zh", merged.about.description2Zh);
+
+      setValue("payment-qr-prefix", merged.payment.fakeQrPrefix);
+    }
+
+    document.getElementById("save-btn").addEventListener("click", () => {
+      if (!window.confirm("Confirm save site settings?")) return;
+      try {
+        const pickupLocations = collectPickupRows();
+        const v = {
+          pickupLocations,
+          priceFilter: {
+            min: Number(getValue("price-min") || 100),
+            max: Number(getValue("price-max") || 2000),
+            default: Number(getValue("price-default") || 2000)
+          },
+          contact: {
+            addressEn: getValue("contact-address-en"),
+            addressZh: getValue("contact-address-zh"),
+            phone: getValue("contact-phone"),
+            email: getValue("contact-email"),
+            weekdaysEn: getValue("hours-weekdays-en"),
+            weekdaysZh: getValue("hours-weekdays-zh"),
+            weekendsEn: getValue("hours-weekends-en"),
+            weekendsZh: getValue("hours-weekends-zh")
+          },
+          social: {
+            viber: getValue("social-viber"),
+            whatsapp: getValue("social-whatsapp"),
+            linkedin: getValue("social-linkedin"),
+            facebook: getValue("social-facebook")
+          },
+          about: {
+            titleEn: getValue("about-title-en"), titleZh: getValue("about-title-zh"),
+            description1En: getValue("about-desc1-en"), description1Zh: getValue("about-desc1-zh"),
+            description2En: getValue("about-desc2-en"), description2Zh: getValue("about-desc2-zh")
+          },
+          payment: { fakeQrPrefix: getValue("payment-qr-prefix") || "AERO-PAY" }
+        };
+        saveSettings(v);
+        document.getElementById("tip").textContent = "Saved.";
+        setTimeout(() => { document.getElementById("tip").textContent = ""; }, 1200);
+      } catch (err) {
+        alert("Pickup settings are invalid. Please check the fields and retry.");
+      }
+    });
+
+    document.getElementById("add-pickup-btn").addEventListener("click", () => {
+      const current = collectPickupRows();
+      current.push({ key: "", en: "", zh: "", address: "" });
+      renderPickupRows(current);
+    });
+
+    document.getElementById("pickup-list").addEventListener("click", (e) => {
+      const btn = e.target.closest(".remove-pickup-btn");
+      if (!btn) return;
+      if (!window.confirm("Confirm remove this pickup location?")) return;
+      const idx = Number(btn.getAttribute("data-row"));
+      const current = collectPickupRows();
+      if (idx >= 0 && idx < current.length) current.splice(idx, 1);
+      renderPickupRows(current);
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      if (!window.confirm("Confirm reset settings to defaults?")) return;
+      saveSettings(defaults());
+      loadToForm();
+      document.getElementById("tip").textContent = "Reset to defaults.";
+      setTimeout(() => { document.getElementById("tip").textContent = ""; }, 1200);
+    });
+
+    loadToForm();
+  </script>
+</body>
+</html>

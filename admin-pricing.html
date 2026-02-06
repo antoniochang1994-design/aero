@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Pricing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <header class="bg-[#0A2463] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Rental Pricing by Model</h1>
+      <a href="admin-home.html" class="text-sm hover:underline">Back to Dashboard</a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 space-y-4">
+    <div class="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+      <button id="save-btn" class="px-4 py-2 bg-[#0A2463] text-white rounded">Save Pricing</button>
+      <a href="admin-inventory.html" class="px-4 py-2 border rounded">Open Inventory</a>
+      <span id="tip" class="text-sm text-green-700"></span>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3 text-left">Model ID</th>
+            <th class="p-3 text-left">Model Name</th>
+            <th class="p-3 text-left">Units (Total/Active)</th>
+            <th class="p-3 text-left">Daily Price</th>
+            <th class="p-3 text-left">Weekly Price</th>
+            <th class="p-3 text-left">Monthly Price</th>
+            <th class="p-3 text-left">With Driver Price</th>
+            <th class="p-3 text-left">Sync Daily -> Inventory</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_ADMIN_AUTH = "aeroAdminAuth";
+    const STORAGE_FLEET_MODELS = "aeroFleetModels";
+    const STORAGE_FLEET_UNITS = "aeroFleetUnits";
+    const STORAGE_MODEL_PRICING = "aeroModelPricing";
+
+    const auth = (() => { try { return JSON.parse(sessionStorage.getItem(STORAGE_ADMIN_AUTH) || "null"); } catch (_) { return null; } })();
+    if (!auth || auth.role !== "admin") window.location.href = `admin-auth.html?redirect=${encodeURIComponent("admin-pricing.html")}`;
+
+    function readModels(){ try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_MODELS) || "[]"); } catch (_) { return []; } }
+    function readUnits(){ try { return JSON.parse(localStorage.getItem(STORAGE_FLEET_UNITS) || "[]"); } catch (_) { return []; } }
+    function saveModels(v){ localStorage.setItem(STORAGE_FLEET_MODELS, JSON.stringify(v)); }
+    function readPricing(){ try { return JSON.parse(localStorage.getItem(STORAGE_MODEL_PRICING) || "{}"); } catch (_) { return {}; } }
+    function savePricing(v){ localStorage.setItem(STORAGE_MODEL_PRICING, JSON.stringify(v)); }
+
+    function ensurePricing() {
+      const models = readModels();
+      const current = readPricing();
+      const next = { ...current };
+      models.forEach((m) => {
+        const id = String(m.modelId);
+        const daily = Number(m.dailyRate || 0);
+        if (!next[id]) {
+          next[id] = {
+            daily,
+            weekly: Math.round(daily * 6.5),
+            monthly: Math.round(daily * 24),
+            withDriver: Math.round(daily + 500)
+          };
+        } else {
+          next[id] = {
+            daily: Number(next[id].daily || daily),
+            weekly: Number(next[id].weekly || Math.round(daily * 6.5)),
+            monthly: Number(next[id].monthly || Math.round(daily * 24)),
+            withDriver: Number(next[id].withDriver || Math.round(daily + 500))
+          };
+        }
+      });
+      savePricing(next);
+      return next;
+    }
+
+    function render() {
+      const models = readModels();
+      const units = readUnits();
+      const pricing = ensurePricing();
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      if (!models.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="p-4 text-gray-500" colspan="8">No models found. Please create models in Inventory first.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      models.forEach((m, idx) => {
+        const p = pricing[String(m.modelId)] || { daily: 0, weekly: 0, monthly: 0, withDriver: 0 };
+        const modelUnits = units.filter((u) => String(u.modelId) === String(m.modelId));
+        const activeUnits = modelUnits.filter((u) => u.active !== false);
+        const tr = document.createElement("tr");
+        tr.className = "border-t";
+        tr.innerHTML = `
+          <td class="p-3 font-mono">${m.modelId}</td>
+          <td class="p-3">${m.name || "-"}</td>
+          <td class="p-3">${modelUnits.length}/${activeUnits.length}</td>
+          <td class="p-3"><input data-idx="${idx}" data-field="daily" type="number" min="0" value="${Number(p.daily || 0)}" class="border rounded px-2 py-1 w-28"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="weekly" type="number" min="0" value="${Number(p.weekly || 0)}" class="border rounded px-2 py-1 w-28"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="monthly" type="number" min="0" value="${Number(p.monthly || 0)}" class="border rounded px-2 py-1 w-28"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="withDriver" type="number" min="0" value="${Number(p.withDriver || 0)}" class="border rounded px-2 py-1 w-28"></td>
+          <td class="p-3"><input data-idx="${idx}" data-field="syncDaily" type="checkbox" checked></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("save-btn").addEventListener("click", () => {
+      const models = readModels();
+      const nextPricing = ensurePricing();
+
+      models.forEach((m, idx) => {
+        const id = String(m.modelId);
+        const daily = Number(document.querySelector(`input[data-idx="${idx}"][data-field="daily"]`)?.value || 0);
+        const weekly = Number(document.querySelector(`input[data-idx="${idx}"][data-field="weekly"]`)?.value || 0);
+        const monthly = Number(document.querySelector(`input[data-idx="${idx}"][data-field="monthly"]`)?.value || 0);
+        const withDriver = Number(document.querySelector(`input[data-idx="${idx}"][data-field="withDriver"]`)?.value || 0);
+        const syncDaily = !!document.querySelector(`input[data-idx="${idx}"][data-field="syncDaily"]`)?.checked;
+
+        nextPricing[id] = {
+          daily: Math.max(0, daily),
+          weekly: Math.max(0, weekly),
+          monthly: Math.max(0, monthly),
+          withDriver: Math.max(0, withDriver)
+        };
+
+        if (syncDaily) m.dailyRate = Math.max(0, daily);
+      });
+
+      savePricing(nextPricing);
+      saveModels(models);
+      document.getElementById("tip").textContent = "Saved.";
+      setTimeout(() => { document.getElementById("tip").textContent = ""; }, 1200);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
